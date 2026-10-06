@@ -1,0 +1,17 @@
+{
+  "name": "tank-war",
+  "version": "1.0.0",
+  "description": "TANK WAR // GRID ASSAULT - networked 2-player tank battle. Host displays on a screen, players connect from phones.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3"
+  }
+}

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#d8d7d2">
+<title>Tank War — Controller</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+:root{
+  --paper:#d8d7d2;--card:#e6e5e0;--ink:#1b1b1a;--ink-2:#3b3b39;--mute:#76756f;--line:#a6a59f;
+  --me:#1b1b1a;           /* set to the player's colour after joining */
+  --display:'Space Grotesk','Helvetica Neue',Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+body.slot-B{--me:#1a4361}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;background:var(--paper);color:var(--ink);font-family:var(--display);overflow:hidden;touch-action:none}
+
+/* film grain */
+body::after{
+  content:'';position:fixed;inset:-100px;pointer-events:none;z-index:99999;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode:overlay;opacity:.85;animation:grain .6s steps(5) infinite;
+}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-31px,17px)}40%{transform:translate(14px,-38px)}60%{transform:translate(-9px,29px)}80%{transform:translate(35px,7px)}100%{transform:translate(0,0)}}
+
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;transition:opacity .25s}
+.screen.hidden{opacity:0;pointer-events:none}
+.kicker{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--mute)}
+.title{font-size:2.6rem;font-weight:700;letter-spacing:-.04em;line-height:.9;text-transform:uppercase}
+
+/* join */
+.field{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px}
+#code-input{
+  width:100%;padding:14px;text-align:center;letter-spacing:.35em;background:var(--card);
+  border:2px solid var(--ink);color:var(--ink);font-family:var(--mono);font-size:1.5rem;font-weight:700;outline:none;border-radius:0;
+  -webkit-user-select:text;user-select:text;
+}
+#error-msg{font-family:var(--mono);font-size:.68rem;color:#8a4f3c;min-height:1em;font-weight:700;text-align:center}
+.btn{
+  width:100%;max-width:300px;padding:16px;background:var(--ink);color:var(--paper);border:2px solid var(--ink);border-radius:0;
+  font-family:var(--mono);font-size:.85rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  box-shadow:5px 5px 0 var(--line);transition:transform .08s,box-shadow .08s;cursor:pointer;
+}
+.btn:active,.btn.pressed{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--line)}
+.btn.done{background:var(--paper);color:var(--ink)}
+
+/* lobby */
+.me-tank{width:180px;height:89px}
+.slot-tag{font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--me)}
+.lobby-status{font-size:.85rem;color:var(--ink-2);text-align:center;font-weight:500}
+.dots{display:flex;gap:18px;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.14em;color:var(--mute);text-transform:uppercase}
+.ri{display:flex;align-items:center;gap:7px}
+.ri-dot{width:10px;height:10px;border:2px solid var(--line)}
+.ri-dot.on{border-color:var(--ink);background:transparent}
+.ri-dot.ready{border-color:var(--ink);background:var(--ink)}
+
+.col{display:contents}
+/* landscape lobby: put things side by side so it fits */
+@media (orientation:landscape) and (max-height:500px){
+  #lobby-screen{flex-direction:row;gap:36px}
+  #lobby-screen .col{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .title{font-size:2rem}
+}
+
+/* ── CONTROLLER ── */
+#controller-screen{flex-direction:row;justify-content:space-between;align-items:center;padding:16px max(28px,env(safe-area-inset-right)) 16px max(28px,env(safe-area-inset-left))}
+.side{display:flex;flex-direction:column;align-items:center;gap:10px}
+.cap{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--mute)}
+
+.dpad{width:min(210px,52vh);height:min(210px,52vh);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:5px}
+.dpad-btn{
+  background:var(--card);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;
+  touch-action:none;box-shadow:4px 4px 0 var(--line);transition:transform .05s,box-shadow .05s,background .05s;
+}
+.dpad-btn svg{width:42%;height:42%;fill:var(--ink)}
+.dpad-btn.active{background:var(--me);transform:translate(3px,3px);box-shadow:1px 1px 0 var(--line)}
+.dpad-btn.active svg{fill:var(--paper)}
+.d-up{grid-column:2;grid-row:1}.d-left{grid-column:1;grid-row:2}.d-right{grid-column:3;grid-row:2}.d-down{grid-column:2;grid-row:3}
+.d-center{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:1.4rem;color:var(--me);border:2px dashed var(--line)}
+
+.center-info{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.center-info svg{width:min(140px,22vw);height:auto}
+#ctrl-status{font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
+
+.fire{
+  width:min(170px,44vh);height:min(170px,44vh);border-radius:50%;
+  background:var(--card);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--line);
+  display:flex;align-items:center;justify-content:center;touch-action:none;position:relative;
+  transition:transform .05s,box-shadow .05s,background .05s;
+}
+.fire::before{content:'';position:absolute;inset:12%;border-radius:50%;border:2px dashed var(--line)}
+.fire svg{width:46%;height:46%;position:relative}
+.fire svg *{stroke:var(--ink);fill:none}
+.fire .lbl{position:absolute;bottom:17%;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.3em;color:var(--ink)}
+.fire.active{background:var(--me);transform:translate(4px,4px);box-shadow:2px 2px 0 var(--line)}
+.fire.active svg *{stroke:var(--paper)}
+.fire.active .lbl{color:var(--paper)}
+.fire.active::before{border-color:rgba(233,232,227,.4)}
+
+/* rotate overlay */
+.rotate-overlay{display:none;position:fixed;inset:0;z-index:10000;background:var(--paper);flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px}
+.rotate-overlay.visible{display:flex}
+.rotate-icon{width:84px;height:84px;animation:rot 1.8s ease-in-out infinite}
+@keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
+
+/* banner */
+#banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--ink);color:var(--paper);text-align:center;font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.12em;padding:8px 0;display:none;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div id="banner"></div>
+
+<!-- ROTATE -->
+<div class="rotate-overlay" id="rotate-overlay">
+  <svg class="rotate-icon" viewBox="0 0 100 100" fill="none" stroke="#1b1b1a" stroke-width="4">
+    <rect x="30" y="12" width="40" height="66" rx="3"/>
+    <line x1="44" y1="70" x2="56" y2="70"/>
+  </svg>
+  <div class="title" style="font-size:1.6rem">Rotate your phone</div>
+  <div class="kicker">Landscape to play</div>
+</div>
+
+<!-- JOIN -->
+<div class="screen" id="join-screen">
+  <div class="kicker">Controller</div>
+  <div class="title">Tank War</div>
+  <div class="field">
+    <input id="code-input" type="text" maxlength="6" placeholder="000000" autocomplete="off" inputmode="numeric">
+    <div id="error-msg"></div>
+    <button class="btn" id="join-btn">Join</button>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="screen hidden" id="lobby-screen">
+  <div class="col">
+    <svg class="me-tank" data-tank="A" viewBox="0 0 172 85"></svg>
+    <div class="slot-tag" id="my-slot-badge">Player A</div>
+  </div>
+  <div class="col">
+    <div class="lobby-status" id="lobby-status">Waiting for the other player…</div>
+    <div class="dots">
+      <div class="ri"><div class="ri-dot" id="dot-a"></div><span>A</span></div>
+      <div class="ri"><div class="ri-dot" id="dot-b"></div><span>B</span></div>
+    </div>
+    <button class="btn" id="ready-btn">Ready</button>
+  </div>
+</div>
+
+<!-- CONTROLLER -->
+<div class="screen hidden" id="controller-screen">
+  <div class="side">
+    <div class="dpad">
+      <div class="dpad-btn d-up" data-dir="up"><svg viewBox="0 0 24 24"><path d="M12 4l9 12H3z"/></svg></div>
+      <div class="dpad-btn d-left" data-dir="left"><svg viewBox="0 0 24 24"><path d="M4 12l12-9v18z"/></svg></div>
+      <div class="d-center" id="dpad-label">A</div>
+      <div class="dpad-btn d-right" data-dir="right"><svg viewBox="0 0 24 24"><path d="M20 12L8 3v18z"/></svg></div>
+      <div class="dpad-btn d-down" data-dir="down"><svg viewBox="0 0 24 24"><path d="M12 20l9-12H3z"/></svg></div>
+    </div>
+    <div class="cap">Drive · Turn</div>
+  </div>
+
+  <div class="center-info">
+    <svg class="ctrl-tank" data-tank="A" viewBox="0 0 172 85"></svg>
+    <div class="slot-tag" id="ctrl-badge">Player A</div>
+    <div id="ctrl-status">In battle</div>
+  </div>
+
+  <div class="side">
+    <div class="fire" id="action-btn">
+      <svg viewBox="0 0 48 48" stroke-width="3">
+        <circle cx="24" cy="24" r="13"/>
+        <line x1="24" y1="3" x2="24" y2="15"/><line x1="24" y1="33" x2="24" y2="45"/>
+        <line x1="3" y1="24" x2="15" y2="24"/><line x1="33" y1="24" x2="45" y2="24"/>
+      </svg>
+      <span class="lbl">FIRE</span>
+    </div>
+    <div class="cap">Tap to shoot</div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ── Tank artwork (same as host) ──
+const TANK_PATHS=[
+  ['plate','M140.816 73.9546C140.608 74.3143 140.476 74.7133 140.43 75.1264L140.196 77.2374C140.075 78.3246 139.372 79.2599 138.361 79.6781L126.051 84.7721C125.687 84.9226 125.297 85 124.904 85H94.7599C92.1589 85 90.7903 81.916 92.5353 79.9873L96.8308 75.2396C97.2653 74.7595 97.8434 74.4328 98.4788 74.3083L141.678 65.8466C143.364 65.5164 144.654 67.3248 143.793 68.8113L140.816 73.9546Z'],
+  ['plate','M138.361 5.3219C139.372 5.74016 140.075 6.67544 140.196 7.76266L140.43 9.87361C140.476 10.2867 140.608 10.6857 140.816 11.0454L143.793 16.1887C144.654 17.6753 143.364 19.4836 141.678 19.1535L98.4788 10.6917C97.8434 10.5673 97.2653 10.2406 96.8308 9.76041L92.5353 5.01274C90.7903 3.08397 92.1589 0 94.7599 0H124.904C125.297 0 125.687 0.0774546 126.051 0.22795L138.361 5.3219Z'],
+  ['hull','M86.701 2.10246C87.1597 2.07563 87.9271 3.18175 88.2354 3.52246L95.6904 11.7617C95.834 11.9203 96.0247 12.029 96.2344 12.0713L140.524 20.9883C141.457 21.1763 142.129 21.9966 142.129 22.949V62.0501C142.129 63.0025 141.457 63.8227 140.524 64.0107L96.2344 72.9287C96.0247 72.971 95.834 73.0797 95.6904 73.2383L88.3174 81.3877C88.1017 81.6263 87.0825 82.9045 86.7614 82.8858L8.65061 78.3296C5.478 78.1446 3 75.5178 3 72.3398V12.6592C3 9.48161 5.47738 6.85504 8.64953 6.66943L86.701 2.10246Z'],
+  ['team','M0 67.3431C0 65.0045 1.99769 63.1646 4.32847 63.3567L85.3285 70.0308C87.4032 70.2018 89 71.9355 89 74.0173V81C89 83.2091 87.2091 85 85 85H4C1.79086 85 0 83.2091 0 81V67.3431Z'],
+  ['team','M0 17.6569C0 19.9955 1.99769 21.8354 4.32847 21.6433L85.3285 14.9692C87.4032 14.7982 89 13.0645 89 10.9827V4C89 1.79086 87.2091 -3.09944e-06 85 -3.09944e-06H4C1.79086 -3.09944e-06 0 1.79086 0 4V17.6569Z'],
+  ['team','M89.2929 25.5651C90.1582 25.8019 90.6264 26.7375 90.2974 27.5722C90.0045 28.3148 90.3414 29.157 91.0656 29.4929L102.262 34.6853C103.322 35.1768 104 36.2387 104 37.4069V47.5931C104 48.7613 103.322 49.8232 102.262 50.3147L91.0656 55.5072C90.3414 55.843 90.0045 56.6852 90.2974 57.4278C90.6264 58.2625 90.1582 59.1981 89.2929 59.4349L66.6855 65.6236C65.7759 65.8726 64.8294 65.9588 63.8899 65.8782L47.5362 64.4761C44.199 64.19 41.3933 61.8552 40.5056 58.6255L38.286 50.5495C38.0962 49.8588 38 49.1457 38 48.4294V36.5706C38 35.8543 38.0962 35.1412 38.286 34.4505L40.5056 26.3745C41.3933 23.1448 44.199 20.81 47.5362 20.5239L63.8899 19.1218C64.8294 19.0412 65.7759 19.1274 66.6855 19.3764L89.2929 25.5651Z'],
+  ['team','M91 40H162C163.105 40 164 40.8954 164 42V43C164 44.1046 163.105 45 162 45H91V40Z'],
+  ['team','M135 41C135 39.8954 135.895 39 137 39H156C157.105 39 158 39.8954 158 41V44C158 45.1046 157.105 46 156 46H137C135.895 46 135 45.1046 135 44V41Z'],
+  ['team','M145 40C145 38.8954 145.895 38 147 38H170C171.105 38 172 38.8954 172 40V45C172 46.1046 171.105 47 170 47H147C145.895 47 145 46.1046 145 45V40Z'],
+  ['plate','M152 38H165V47H152V38Z'],
+];
+function paintTanks(team){
+  const tc=team==='B'?'#1a4361':'#1b1b1a';
+  document.querySelectorAll('svg[data-tank]').forEach(s=>{
+    s.innerHTML=TANK_PATHS.map(([r,d])=>`<path d="${d}" fill="${r==='team'?tc:r==='hull'?'#b4b4b4':'#848484'}"/>`).join('');
+  });
+}
+paintTanks('A');
+
+const socket=io({transports:['websocket']});
+let mySlot=null,myCode=null,gameStarted=false;
+
+// ── connection banner + rejoin ──
+const banner=document.getElementById('banner');
+function showBanner(m){banner.textContent=m;banner.style.display='block';}
+function hideBanner(){banner.style.display='none';}
+socket.on('disconnect',()=>{if(mySlot&&myCode) showBanner('Connection lost — reconnecting…');});
+socket.on('connect',()=>{if(mySlot&&myCode) socket.emit('rejoin_game',{code:myCode,slot:mySlot});});
+
+// ── screens ──
+const joinScreen=document.getElementById('join-screen');
+const lobbyScreen=document.getElementById('lobby-screen');
+const ctrlScreen=document.getElementById('controller-screen');
+function showScreen(n){
+  joinScreen.classList.toggle('hidden',n!=='join');
+  lobbyScreen.classList.toggle('hidden',n!=='lobby');
+  ctrlScreen.classList.toggle('hidden',n!=='controller');
+}
+
+// ── ready ──
+const readyBtn=document.getElementById('ready-btn');
+let isReady=false;
+readyBtn.addEventListener('click',()=>{
+  if(isReady) return;
+  isReady=true;readyBtn.textContent='Standing by…';readyBtn.classList.add('done');
+  socket.emit('player_ready',{code:myCode});
+});
+
+// ── join ──
+const codeInput=document.getElementById('code-input');
+const errorMsg=document.getElementById('error-msg');
+document.getElementById('join-btn').addEventListener('click',doJoin);
+codeInput.addEventListener('keydown',e=>{if(e.key==='Enter') doJoin();});
+function doJoin(){
+  const code=codeInput.value.trim();
+  if(!/^\d{6}$/.test(code)){errorMsg.textContent='Enter the 6-digit code';return;}
+  errorMsg.textContent='';
+  myCode=code;socket.emit('join_game',{code});
+}
+{
+  const urlCode=new URLSearchParams(location.search).get('code');
+  if(urlCode&&/^\d{6}$/.test(urlCode)){codeInput.value=urlCode;doJoin();}
+}
+socket.on('join_error',m=>{errorMsg.textContent=m;showScreen('join');});
+
+socket.on('joined',({slot,code})=>{
+  hideBanner();
+  mySlot=slot;myCode=code;
+  document.body.classList.toggle('slot-B',slot==='B');
+  paintTanks(slot);
+  document.getElementById('my-slot-badge').textContent='Player '+slot;
+  document.getElementById('dpad-label').textContent=slot;
+  document.getElementById('ctrl-badge').textContent='Player '+slot;
+  if(!gameStarted){
+    isReady=false;readyBtn.textContent='Ready';readyBtn.classList.remove('done');
+    document.getElementById('lobby-status').textContent='Waiting for the other player…';
+    updateDots({A:false,B:false},{A:false,B:false});
+    showScreen('lobby');
+  }
+});
+
+socket.on('player_joined',({players})=>{
+  updateDots({A:!!players.A,B:!!players.B},{A:false,B:false});
+  if(players.A&&players.B) document.getElementById('lobby-status').textContent='Both players in — press Ready';
+});
+socket.on('player_left',({slot})=>{
+  document.getElementById('lobby-status').textContent='Player '+slot+' disconnected…';
+  document.getElementById('ctrl-status').textContent='Player '+slot+' disconnected';
+  document.getElementById('dot-'+slot.toLowerCase()).className='ri-dot';
+});
+socket.on('game_event',({event,data})=>{
+  if(event==='lobby_ready_update'){
+    updateDots({A:data.A,B:data.B},{A:data.readyA,B:data.readyB});
+    if(gameStarted&&data.A&&data.B) document.getElementById('ctrl-status').textContent='In battle';
+  }
+});
+socket.on('game_start',()=>{isReady=false;gameStarted=true;showScreen('controller');});
+
+function updateDots(present,ready){
+  for(const s of ['A','B']){
+    document.getElementById('dot-'+s.toLowerCase()).className='ri-dot'+(ready[s]?' ready':present[s]?' on':'');
+  }
+}
+socket.on('host_disconnected',()=>{
+  gameStarted=false;mySlot=null;myCode=null;
+  showBanner('The host ended the game');
+  errorMsg.textContent='Scan the new QR code to join again';
+  showScreen('join');
+});
+
+// ── D-pad ──
+const pressedDirs=new Set();
+function sendDir(dir,pressed){if(myCode&&mySlot) socket.emit('ctrl_input',{code:myCode,slot:mySlot,dir,pressed});}
+function pressDir(dir){
+  if(pressedDirs.has(dir)) return;
+  pressedDirs.add(dir);sendDir(dir,true);
+  document.querySelector(`.dpad-btn[data-dir="${dir}"]`).classList.add('active');
+  if(navigator.vibrate) navigator.vibrate(8);
+}
+function releaseDir(dir){
+  if(!pressedDirs.has(dir)) return;
+  pressedDirs.delete(dir);sendDir(dir,false);
+  document.querySelector(`.dpad-btn[data-dir="${dir}"]`).classList.remove('active');
+}
+document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn=>{
+  const dir=btn.dataset.dir;
+  btn.addEventListener('touchstart',e=>{e.preventDefault();pressDir(dir);},{passive:false});
+  btn.addEventListener('touchend',e=>{e.preventDefault();releaseDir(dir);},{passive:false});
+  btn.addEventListener('touchcancel',e=>{e.preventDefault();releaseDir(dir);},{passive:false});
+  btn.addEventListener('mousedown',e=>{e.preventDefault();pressDir(dir);});
+  btn.addEventListener('mouseup',e=>{e.preventDefault();releaseDir(dir);});
+  btn.addEventListener('mouseleave',()=>releaseDir(dir));
+});
+window.addEventListener('blur',()=>[...pressedDirs].forEach(releaseDir));
+
+// ── Fire ──
+const actionBtn=document.getElementById('action-btn');
+function fire(){
+  if(!myCode||!mySlot) return;
+  socket.emit('ctrl_fire',{code:myCode,slot:mySlot});
+  if(navigator.vibrate) navigator.vibrate(25);
+}
+actionBtn.addEventListener('touchstart',e=>{e.preventDefault();actionBtn.classList.add('active');fire();},{passive:false});
+actionBtn.addEventListener('touchend',e=>{e.preventDefault();actionBtn.classList.remove('active');},{passive:false});
+actionBtn.addEventListener('touchcancel',e=>{e.preventDefault();actionBtn.classList.remove('active');},{passive:false});
+actionBtn.addEventListener('mousedown',()=>{actionBtn.classList.add('active');fire();});
+actionBtn.addEventListener('mouseup',()=>actionBtn.classList.remove('active'));
+actionBtn.addEventListener('mouseleave',()=>actionBtn.classList.remove('active'));
+
+// ── Landscape gate (only once the controller is live) ──
+const rotateOverlay=document.getElementById('rotate-overlay');
+function checkOrientation(){
+  const portrait=matchMedia('(orientation: portrait)').matches;
+  rotateOverlay.classList.toggle('visible',portrait&&!ctrlScreen.classList.contains('hidden'));
+  if(portrait){[...pressedDirs].forEach(releaseDir);actionBtn.classList.remove('active');}
+}
+matchMedia('(orientation: portrait)').addEventListener('change',checkOrientation);
+addEventListener('resize',checkOrientation);
+new MutationObserver(checkOrientation).observe(ctrlScreen,{attributes:true,attributeFilter:['class']});
+checkOrientation();
+</script>
+</body>
+</html>
