@@ -6,7 +6,7 @@
 <title>Tank War</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@font-face{font-family:'Unbounded';src:url('/fonts/Unbounded-Variable.woff2') format('woff2');font-weight:200 900;font-display:swap}
 :root{
   --paper:#d8d7d2;
   --paper-2:#cbcac4;
@@ -19,8 +19,8 @@
   --pB:#1a4361;
   --ok:#55644a;
   --warn:#8a4f3c;
-  --display:'Space Grotesk','Helvetica Neue',Arial,sans-serif;
-  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --display:'Unbounded','Helvetica Neue',Arial,sans-serif;
+  --mono:'Unbounded','Helvetica Neue',Arial,sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--paper);color:var(--ink);font-family:var(--display);user-select:none}
@@ -46,7 +46,7 @@ body::after{
 .tb-tank{width:58px;height:29px;flex-shrink:0}
 .tb-info{display:flex;flex-direction:column;gap:5px}
 .tb-side.right .tb-info{align-items:flex-end}
-.tb-name{font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.tb-name{font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase}
 .cA{color:var(--pA)} .cB{color:var(--pB)}
 .hprow{display:flex;align-items:center;gap:8px}
 .tb-side.right .hprow{flex-direction:row-reverse}
@@ -57,15 +57,15 @@ body::after{
 .hpval{font-family:var(--mono);font-size:.62rem;color:var(--mute);font-weight:700;min-width:26px}
 .ammo-slots{display:flex;gap:3px;align-items:center;min-height:14px}
 .tb-side.right .ammo-slots{flex-direction:row-reverse}
-.ammo-label{font-family:var(--mono);font-size:.55rem;color:var(--mute);letter-spacing:.12em;font-weight:700;margin:0 4px}
+.ammo-label{font-family:var(--mono);font-size:.55rem;color:var(--mute);letter-spacing:0.05em;font-weight:700;margin:0 4px}
 .ammo-pip{width:4px;height:11px;background:var(--line);transition:background .15s}
 .ammo-pip.on.A{background:var(--pA)} .ammo-pip.on.B{background:var(--pB)}
 .buff{width:14px;height:14px;margin:0 2px}
 .tb-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-left:2px solid var(--ink);border-right:2px solid var(--ink)}
-.game-title{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.32em;color:var(--mute)}
-.scores{display:flex;gap:14px;align-items:baseline;font-size:2rem;font-weight:700;line-height:1.1}
+.game-title{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:0.14em;color:var(--mute)}
+.scores{display:flex;gap:14px;align-items:baseline;font-size:1.6rem;font-weight:700;line-height:1.1}
 .sdiv{color:var(--line);font-size:1.2rem}
-.round-badge{font-family:var(--mono);font-size:.58rem;color:var(--mute);letter-spacing:.14em;font-weight:700;text-transform:uppercase}
+.round-badge{font-family:var(--mono);font-size:.58rem;color:var(--mute);letter-spacing:0.06em;font-weight:700;text-transform:uppercase}
 
 /* ── ARENA ── */
 #arena{position:relative;flex:1;overflow:hidden;background:var(--paper)}
@@ -74,8 +74,8 @@ canvas{display:block;position:absolute;top:0;left:0}
 /* ── SCREENS ── */
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:var(--paper);z-index:100;padding:24px}
 .screen.hidden{display:none}
-.kicker{font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--mute)}
-.big-title{font-size:clamp(3rem,9vw,7rem);font-weight:700;letter-spacing:-.04em;line-height:.9;color:var(--ink);text-transform:uppercase}
+.kicker{font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--mute)}
+.big-title{font-size:clamp(2.4rem,6.5vw,5.2rem);font-weight:800;letter-spacing:-.03em;line-height:.9;color:var(--ink);text-transform:uppercase}
 .sub{font-size:.95rem;color:var(--ink-2);text-align:center;max-width:460px;line-height:1.5;font-weight:500}
 .hero-tanks{display:flex;gap:46px;align-items:center}
 .hero-tanks svg{width:170px;height:84px}
@@ -83,36 +83,43 @@ canvas{display:block;position:absolute;top:0;left:0}
 
 .btn{
   padding:16px 40px;background:var(--ink);color:var(--paper);border:2px solid var(--ink);
-  font-family:var(--mono);font-size:.85rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  font-family:var(--mono);font-size:.85rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;
   cursor:pointer;box-shadow:5px 5px 0 var(--line);transition:transform .1s,box-shadow .1s;
 }
 .btn:hover{background:var(--ink-2)}
-.btn:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--line)}
+.btn-row{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.menu .btn{background:var(--card);color:var(--ink);box-shadow:5px 5px 0 var(--line);position:relative}
+.menu .btn.focus{background:var(--ink);color:var(--paper);outline:2px solid var(--ink);outline-offset:5px;animation:focuspulse 1.2s ease-in-out infinite}
+.menu .btn.focus::before{content:'';position:absolute;left:-22px;top:50%;width:0;height:0;border:7px solid transparent;border-left:9px solid var(--ink);transform:translateY(-50%)}
+@keyframes focuspulse{0%,100%{outline-offset:5px}50%{outline-offset:9px}}
+.pad-hint{display:flex;gap:16px;align-items:center;font-family:var(--mono);font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.pad-hint kbd{font-family:var(--mono);display:inline-block;border:1.5px solid var(--mute);padding:3px 6px;margin-right:6px;font-size:.56rem;color:var(--ink-2)}
+.btn.pressed,.btn:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--line)}
 
 /* lobby */
 .lobby-wrap{display:flex;gap:48px;align-items:center;flex-wrap:wrap;justify-content:center}
 .qr-card{background:var(--card);border:2px solid var(--ink);padding:18px 18px 14px;box-shadow:8px 8px 0 var(--line);display:flex;flex-direction:column;align-items:center;gap:10px}
 .qr-box{width:min(300px,38vh);height:min(300px,38vh);display:flex;align-items:center;justify-content:center}
 .qr-box svg{width:100%;height:100%}
-.qr-cap{font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--ink)}
-.qr-code{font-family:var(--mono);font-size:.62rem;color:var(--mute);letter-spacing:.2em}
+.qr-cap{font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:0.11em;text-transform:uppercase;color:var(--ink)}
+.qr-code{font-family:var(--mono);font-size:.62rem;color:var(--mute);letter-spacing:0.09em}
 .lobby-side{display:flex;flex-direction:column;gap:18px;align-items:flex-start;max-width:360px}
-.lobby-side .big-title{font-size:clamp(2.4rem,5vw,4rem)}
+.lobby-side .big-title{font-size:clamp(1.8rem,3.4vw,2.8rem)}
 .slots{display:flex;flex-direction:column;gap:10px;width:100%}
 .slot{display:flex;align-items:center;gap:14px;padding:12px 14px;border:2px solid var(--line);background:var(--card);transition:border-color .2s}
 .slot svg{width:64px;height:32px;opacity:.25;transition:opacity .25s}
 .slot.on svg,.slot.ready svg{opacity:1}
 .slot.on{border-color:var(--ink-2)}
 .slot.ready{border-color:var(--ink)}
-.slot-name{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;flex:1}
-.slot-st{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.slot-name{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;flex:1}
+.slot-st{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--mute)}
 .slot.on .slot-st{color:var(--ink-2)}
 .slot.ready .slot-st{color:var(--paper);background:var(--ink);padding:3px 7px}
 
 /* ── ROUND OVERLAY ── */
 #round-overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:rgba(216,215,210,.94);z-index:100;padding:24px}
-#ov-title{font-size:clamp(2rem,5vw,3.6rem);font-weight:700;letter-spacing:-.03em;text-align:center;text-transform:uppercase;line-height:1}
-#ov-sub{font-family:var(--mono);font-size:.78rem;color:var(--ink-2);text-align:center;letter-spacing:.08em}
+#ov-title{font-size:clamp(1.3rem,3vw,2.5rem);font-weight:800;letter-spacing:-.02em;text-align:center;text-transform:uppercase;line-height:1}
+#ov-sub{font-family:var(--mono);font-size:.78rem;color:var(--ink-2);text-align:center;letter-spacing:0.04em}
 .legend{display:grid;grid-template-columns:1fr 1fr;gap:10px 30px;padding:16px 20px;border:2px solid var(--ink);background:var(--card)}
 .legend-item{display:flex;align-items:center;gap:10px;font-size:.82rem;font-weight:500;color:var(--ink-2)}
 .legend-item svg{width:22px;height:22px;flex-shrink:0}
@@ -121,7 +128,7 @@ canvas{display:block;position:absolute;top:0;left:0}
 /* ── TOAST ── */
 #toast{
   position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.06em;
+  font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:0.03em;
   padding:8px 16px;background:var(--card);border:2px solid var(--ink);color:var(--ink);
   pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;box-shadow:4px 4px 0 var(--line)
 }
@@ -195,7 +202,11 @@ canvas{display:block;position:absolute;top:0;left:0}
     <div id="ov-title">Round win</div>
     <div id="ov-sub"></div>
     <div class="legend" id="legend"></div>
-    <button class="btn" id="ov-btn">Next round</button>
+    <div class="btn-row menu">
+      <button class="btn" id="ov-btn">Next round</button>
+      <button class="btn" id="ov-lobby">Back to lobby</button>
+    </div>
+    <div class="pad-hint"><span><kbd>◀ ▶</kbd>choose</span><span><kbd>FIRE</kbd>select</span></div>
   </div>
 
   <div id="toast"></div>
@@ -225,7 +236,7 @@ function sfxWin(){playSample(SND_VICTORY_SRC,.85);}
 //  PALETTE (grayscale + two muted player tones)
 // ═══════════════════════════════════════════════════════
 const PAL={
-  floor:'#d8d7d2',grid:'#c9c8c2',
+  floor:'#cfcdc6',grid:'#c9c8c2',
   wall:'#8e8d88',wallHi:'#a7a6a0',wallLo:'#6d6c67',wallEdge:'#4f4e4a',wallShadow:'rgba(27,27,26,.16)',
   ink:'#1b1b1a',paper:'#e9e8e3',line:'#a6a59f',
   A:'#1b1b1a',B:'#1a4361',
@@ -239,7 +250,7 @@ const PU_DEF={
   DBL:   {name:'Double shot',desc:'next shot fires two',    color:'#7d6f4c'},
   REPAIR:{name:'Repair',     desc:'restore 1 HP',           color:'#80534d'},
   AMMO:  {name:'Reload',     desc:'full ammo, instant fire',color:'#566e69'},
-  PIERCE:{name:'Pierce',     desc:'next shot goes through walls',color:'#665a70'},
+  PIERCE:{name:'Pierce',     desc:'next shot goes through rocks',color:'#665a70'},
 };
 // 24×24 icon paths, used on canvas (Path2D) and in HTML (inline svg)
 const ICON={
@@ -297,7 +308,7 @@ function resize(){
   canvas.width=AW*DPR;canvas.height=AH*DPR;canvas.style.width=AW+'px';canvas.style.height=AH+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
 }
-window.addEventListener('resize',()=>{resize();if(!gameActive){genCubes();}else buildBg();});
+window.addEventListener('resize',()=>{resize();if(!gameActive){computeScale();spawnPlayers();genArena();}else buildBg();});
 
 // ═══════════════════════════════════════════════════════
 //  GAME CONSTANTS
@@ -308,7 +319,7 @@ const TANK_TURN=1.3;       // rad/sec
 const BULLET_SPEED=520;    // px/sec
 const BR=5;                // bullet radius
 const MAX_BOUNCES=3;
-let TANK_R=38;             // size unit, recalculated in genCubes()
+let TANK_R=38;             // size unit, recalculated in computeScale()
 let CUBE_SZ=52;
 const PU_TYPES=['SPEED','ARMOR','DBL','REPAIR','AMMO','PIERCE','SPEED','REPAIR','AMMO','ARMOR'];
 
@@ -323,96 +334,260 @@ function hullHalfW(){return SVG_HULL_HALF_H*tScale();}
 function muzzleDist(){return (SVG_MUZZLE_X-SVG_PIVOT_X)*tScale();}
 
 // ═══════════════════════════════════════════════════════
-//  ARENA
+//  ARENA — open ground with natural grey rocks (no walls)
 // ═══════════════════════════════════════════════════════
-function genCubes(){
-  cubes=[];
-  const CS=Math.max(18,Math.round(Math.min(AW,AH)/13));
-  CUBE_SZ=CS;
-  TANK_R=Math.max(16,Math.min(38,Math.round(CS*0.75)));
+let rocks=[];   // {cx,cy,br,pts:[{x,y}] (convex, CCW), shade}
+let UNIT=52;    // general size unit (≈ old cube size)
 
-  for(let x=0;x<AW;x+=CS){cubes.push({x,y:0,w:CS,h:CS});cubes.push({x,y:AH-CS,w:CS,h:CS});}
-  for(let y=CS;y<AH-CS;y+=CS){cubes.push({x:0,y,w:CS,h:CS});cubes.push({x:AW-CS,y,w:CS,h:CS});}
+function computeScale(){
+  const U=Math.min(AW,AH);
+  UNIT=Math.max(18,Math.round(U/13));
+  TANK_R=Math.max(16,Math.min(38,Math.round(UNIT*0.75)));
+  CUBE_SZ=UNIT;
+}
 
-  const W=AW,H=AH,S=CS;
-  const blocks=[
-    [W*.5-S*1.5,H*.5-S*.5,S*3,S],[W*.5-S*.5,H*.5-S*2,S,S*4],
-    [W*.25-S,H*.28,S*2,S*2],[W*.75-S,H*.28,S*2,S*2],
-    [W*.25-S,H*.72-S*2,S*2,S*2],[W*.75-S,H*.72-S*2,S*2,S*2],
-    [W*.15,H*.5-S*.5,S*1.5,S],[W*.82,H*.5-S*.5,S*1.5,S],
-    [W*.38,H*.22,S,S*2],[W*.62-S,H*.22,S,S*2],
-    [W*.38,H*.76,S,S*2],[W*.62-S,H*.76,S,S*2],
-    [W*.22,H*.5-S,S,S*2],[W*.76,H*.5-S,S,S*2],
-  ];
-  for(const[bx,by,bw,bh] of blocks){
-    const cx=Math.round(bx/S)*S,cy=Math.round(by/S)*S;
-    const cw=Math.max(S,Math.round(bw/S)*S),ch=Math.max(S,Math.round(bh/S)*S);
-    cubes.push({x:cx,y:cy,w:cw,h:ch});
+function convexHull(points){
+  const p=points.slice().sort((a,b)=>a.x-b.x||a.y-b.y);
+  const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const lo=[],up=[];
+  for(const q of p){while(lo.length>=2&&cross(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q);}
+  for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>=2&&cross(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q);}
+  up.pop();lo.pop();return lo.concat(up);
+}
+function finishRock(pts){
+  pts=convexHull(pts);
+  let cx=0,cy=0;for(const q of pts){cx+=q.x;cy+=q.y;}cx/=pts.length;cy/=pts.length;
+  let br=0;for(const q of pts) br=Math.max(br,Math.hypot(q.x-cx,q.y-cy));
+  // outward edge normals (works for either winding: point away from centroid)
+  const normals=pts.map((a,i)=>{
+    const b=pts[(i+1)%pts.length];
+    let nx=b.y-a.y,ny=-(b.x-a.x);const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+    const mx=(a.x+b.x)/2-cx,my=(a.y+b.y)/2-cy;
+    if(nx*mx+ny*my<0){nx=-nx;ny=-ny;}
+    return{x:nx,y:ny};
+  });
+  return{cx,cy,br,pts,normals,shade:Math.random()*.16-.08,seed:Math.random()};
+}
+function makeRock(cx,cy,r,symmetric){
+  const n=symmetric?10:7+Math.floor(Math.random()*4);
+  const rot=Math.random()*Math.PI;
+  const sx=1+Math.random()*.35,sy=1-Math.random()*.2;
+  const local=[];
+  const count=symmetric?n/2:n;
+  for(let i=0;i<count;i++){
+    const a=i/n*Math.PI*2+(Math.random()-.5)*(Math.PI/n);
+    const rr=r*(.8+Math.random()*.25);
+    local.push({x:Math.cos(a)*rr*sx,y:Math.sin(a)*rr*sy});
+  }
+  if(symmetric) for(let i=0;i<count;i++) local.push({x:-local[i].x,y:-local[i].y});
+  const pts=local.map(q=>({x:cx+q.x*Math.cos(rot)-q.y*Math.sin(rot),y:cy+q.x*Math.sin(rot)+q.y*Math.cos(rot)}));
+  return finishRock(pts);
+}
+function mirrorRock(rk){
+  return finishRock(rk.pts.map(q=>({x:AW-q.x,y:AH-q.y})));
+}
+
+// Build a fair, point-symmetric rock field around the two spawn points
+function genArena(){
+  rocks=[];
+  const U=Math.min(AW,AH);
+  const passGap=hullHalfW()*2*1.7;                 // corridors a tank can always pass through
+  const spawnClear=hullHalfLen()*3.2;
+  const spawns=[{x:p1.x,y:p1.y},{x:p2.x,y:p2.y}];
+
+  const fits=(x,y,r,ignore)=>{
+    if(x-r<passGap*.8||x+r>AW-passGap*.8||y-r<passGap*.8||y+r>AH-passGap*.8) return false;
+    for(const s of spawns) if(Math.hypot(x-s.x,y-s.y)<r+spawnClear) return false;
+    for(const o of rocks){
+      if(o===ignore) continue;
+      if(Math.hypot(x-o.cx,y-o.cy)<r+o.br+passGap) return false;
+    }
+    return true;
+  };
+
+  // centre boulder (self-symmetric)
+  if(Math.random()<.85){
+    const r=U*(.07+Math.random()*.035);
+    rocks.push(makeRock(AW/2,AH/2,r,true));
+  }
+
+  const pairs=6+Math.floor(Math.random()*3);
+  let placed=0;
+  for(let attempt=0;attempt<600&&placed<pairs;attempt++){
+    const r=U*(.035+Math.random()*.065);
+    const x=r+Math.random()*(AW-2*r),y=r+Math.random()*(AH-2*r);
+    // keep away from its own mirror image
+    if(Math.hypot(x-(AW-x),y-(AH-y))<2*r+passGap) continue;
+    if(!fits(x,y,r)) continue;
+    const mx=AW-x,my=AH-y;
+    const a=makeRock(x,y,r,false);
+    rocks.push(a);
+    if(!fits(mx,my,r)){rocks.pop();continue;}
+    rocks.push(mirrorRock(a));
+    placed++;
+    // little satellite stones hugging the boulder → natural outcrop
+    const kids=Math.floor(Math.random()*3);
+    for(let k=0;k<kids;k++){
+      const ang=Math.random()*Math.PI*2,kr=r*(.3+Math.random()*.25);
+      const kx=x+Math.cos(ang)*(r*.95+kr*.4),ky=y+Math.sin(ang)*(r*.95+kr*.4);
+      const others=rocks.filter(o=>o!==a);
+      const ok=kx-kr>passGap*.8&&kx+kr<AW-passGap*.8&&ky-kr>passGap*.8&&ky+kr<AH-passGap*.8&&
+        spawns.every(s=>Math.hypot(kx-s.x,ky-s.y)>kr+spawnClear)&&
+        others.every(o=>Math.hypot(kx-o.cx,ky-o.cy)>kr+o.br+passGap)&&
+        Math.hypot(kx-(AW-kx),ky-(AH-ky))>2*kr+passGap;
+      if(!ok) continue;
+      const kid=makeRock(kx,ky,kr,false);
+      rocks.push(kid);rocks.push(mirrorRock(kid));
+    }
   }
   buildBg();
 }
 
-// Static floor + walls pre-rendered once per layout
+// ── Ground + rocks, pre-rendered once per layout ──
+const LIGHT={x:-.6,y:-.8};
 function buildBg(){
   bgLayer.width=AW*DPR;bgLayer.height=AH*DPR;
   const g=bgCtx;g.setTransform(DPR,0,0,DPR,0,0);
+  const U=Math.min(AW,AH);
+  // base soil
   g.fillStyle=PAL.floor;g.fillRect(0,0,AW,AH);
-  // fine survey grid
-  g.strokeStyle=PAL.grid;g.lineWidth=1;
-  const GS=CUBE_SZ/2;
-  g.beginPath();
-  for(let x=0;x<AW;x+=GS){g.moveTo(x+.5,0);g.lineTo(x+.5,AH);}
-  for(let y=0;y<AH;y+=GS){g.moveTo(0,y+.5);g.lineTo(AW,y+.5);}
-  g.globalAlpha=.55;g.stroke();g.globalAlpha=1;
-  // wall shadows
-  g.fillStyle=PAL.wallShadow;
-  const so=Math.max(3,CUBE_SZ*.09);
-  for(const c of cubes) g.fillRect(c.x+so,c.y+so,c.w,c.h);
-  // wall blocks (concrete)
-  for(const c of cubes){
-    g.fillStyle=PAL.wall;g.fillRect(c.x,c.y,c.w,c.h);
-    const b=Math.max(2,CUBE_SZ*.08);
-    g.fillStyle=PAL.wallHi;g.fillRect(c.x,c.y,c.w,b);g.fillRect(c.x,c.y,b,c.h);
-    g.fillStyle=PAL.wallLo;g.fillRect(c.x,c.y+c.h-b,c.w,b);g.fillRect(c.x+c.w-b,c.y,b,c.h);
-    // seams between cube cells
-    g.strokeStyle=PAL.wallLo;g.lineWidth=1;g.globalAlpha=.5;
-    g.beginPath();
-    for(let x=c.x+CUBE_SZ;x<c.x+c.w-1;x+=CUBE_SZ){g.moveTo(x+.5,c.y);g.lineTo(x+.5,c.y+c.h);}
-    for(let y=c.y+CUBE_SZ;y<c.y+c.h-1;y+=CUBE_SZ){g.moveTo(c.x,y+.5);g.lineTo(c.x+c.w,y+.5);}
-    g.stroke();g.globalAlpha=1;
+  // soft dirt patches (blurred gradients, no hard edges)
+  for(let i=0;i<Math.round(AW*AH/26000);i++){
+    const x=Math.random()*AW,y=Math.random()*AH,r=U*(.06+Math.random()*.18);
+    const dark=Math.random()<.55;
+    const gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,dark?'rgba(60,58,54,.07)':'rgba(255,255,255,.08)');
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();
   }
-  // grit on the walls
-  for(const c of cubes){
-    const n=Math.round(c.w*c.h/90);
-    for(let i=0;i<n;i++){
-      g.fillStyle=Math.random()<.5?'rgba(0,0,0,.18)':'rgba(255,255,255,.18)';
-      g.fillRect(c.x+Math.random()*c.w,c.y+Math.random()*c.h,1,1);
-    }
+  // gravel speckle
+  for(let i=0;i<Math.round(AW*AH/260);i++){
+    const d=Math.random();
+    g.fillStyle=d<.5?'rgba(40,40,38,'+(.08+Math.random()*.14)+')':'rgba(255,255,255,'+(.1+Math.random()*.2)+')';
+    const s=Math.random()<.85?1:2;
+    g.fillRect(Math.random()*AW,Math.random()*AH,s,s);
   }
+  // hairline cracks in dry ground
+  g.strokeStyle='rgba(50,49,46,.16)';g.lineWidth=1;g.lineCap='round';
+  for(let i=0;i<Math.round(AW*AH/120000)+4;i++){
+    let x=Math.random()*AW,y=Math.random()*AH,a=Math.random()*Math.PI*2;
+    g.beginPath();g.moveTo(x,y);
+    const segs=4+Math.floor(Math.random()*6);
+    for(let s=0;s<segs;s++){a+=(Math.random()-.5)*1.1;const l=6+Math.random()*16;x+=Math.cos(a)*l;y+=Math.sin(a)*l;g.lineTo(x,y);}
+    g.stroke();
+  }
+  // tiny decorative pebbles (no collision)
+  for(let i=0;i<Math.round(AW*AH/9000);i++){
+    const x=Math.random()*AW,y=Math.random()*AH;
+    if(solidPoint(x,y)) continue;
+    const r=1.5+Math.random()*3.5;
+    const pts=[];for(let k=0;k<6;k++){const a=k/6*Math.PI*2+Math.random()*.6;const rr=r*(.7+Math.random()*.4);pts.push({x:x+Math.cos(a)*rr,y:y+Math.sin(a)*rr*.8});}
+    g.fillStyle='rgba(30,30,28,.18)';polyPath(g,pts,1,1.4);g.fill();
+    const v=150+Math.floor(Math.random()*50);
+    g.fillStyle=`rgb(${v},${v-1},${v-4})`;polyPath(g,pts,0,0);g.fill();
+  }
+  // rock shadows (soft)
+  g.save();g.filter='blur('+Math.max(2,U*.006)+'px)';g.fillStyle='rgba(28,28,26,.30)';
+  for(const rk of rocks){const o=rk.br*.16;polyPath(g,rk.pts,o,o*1.25);g.fill();}
+  g.restore();
+  for(const rk of rocks) drawRock(g,rk);
+}
+function polyPath(g,pts,ox,oy){
+  g.beginPath();g.moveTo(pts[0].x+ox,pts[0].y+oy);
+  for(let i=1;i<pts.length;i++) g.lineTo(pts[i].x+ox,pts[i].y+oy);
+  g.closePath();
+}
+function grey(v){v=Math.max(0,Math.min(255,Math.round(v)));return`rgb(${v},${v},${Math.max(0,v-4)})`;}
+function drawRock(g,rk){
+  const base=138+rk.shade*255;
+  const peak={x:rk.cx-rk.br*.14,y:rk.cy-rk.br*.18};
+  const n=rk.pts.length;
+  // faceted sides
+  for(let i=0;i<n;i++){
+    const a=rk.pts[i],b=rk.pts[(i+1)%n],nm=rk.normals[i];
+    const lit=nm.x*LIGHT.x+nm.y*LIGHT.y;            // -1..1
+    g.fillStyle=grey(base+lit*46+(Math.random()-.5)*10);
+    g.beginPath();g.moveTo(peak.x,peak.y);g.lineTo(a.x,a.y);g.lineTo(b.x,b.y);g.closePath();g.fill();
+    g.strokeStyle=grey(base+lit*46-6);g.lineWidth=.6;g.stroke();
+  }
+  // flat top cap catching the light
+  const cap=rk.pts.map(q=>({x:peak.x+(q.x-peak.x)*.42,y:peak.y+(q.y-peak.y)*.42}));
+  g.fillStyle=grey(base+30);polyPath(g,cap,0,0);g.fill();
+  // grit + a crack or two, clipped to the rock
+  g.save();polyPath(g,rk.pts,0,0);g.clip();
+  const area=rk.br*rk.br*3;
+  for(let i=0;i<area/14;i++){
+    g.fillStyle=Math.random()<.5?'rgba(20,20,18,.22)':'rgba(255,255,255,.22)';
+    g.fillRect(rk.cx+(Math.random()-.5)*rk.br*2,rk.cy+(Math.random()-.5)*rk.br*2,1,1);
+  }
+  g.strokeStyle='rgba(35,35,33,.35)';g.lineWidth=1;
+  for(let c=0;c<1+Math.floor(Math.random()*2);c++){
+    let x=peak.x+(Math.random()-.5)*rk.br*.6,y=peak.y+(Math.random()-.5)*rk.br*.6,a=Math.random()*Math.PI*2;
+    g.beginPath();g.moveTo(x,y);
+    for(let s=0;s<4;s++){a+=(Math.random()-.5)*1.2;const l=rk.br*(.12+Math.random()*.15);x+=Math.cos(a)*l;y+=Math.sin(a)*l;g.lineTo(x,y);}
+    g.stroke();
+  }
+  g.restore();
+  // outline
+  g.strokeStyle='#4d4c48';g.lineWidth=1.5;g.lineJoin='round';polyPath(g,rk.pts,0,0);g.stroke();
 }
 
-function solidAtRect(x,y,w,h){
-  for(const c of cubes){if(x<c.x+c.w&&x+w>c.x&&y<c.y+c.h&&y+h>c.y) return true;}
-  return false;
+// ── Collision queries ──
+function pointInRock(px,py,rk){
+  if(Math.hypot(px-rk.cx,py-rk.cy)>rk.br) return false;
+  const pts=rk.pts,n=pts.length;
+  for(let i=0;i<n;i++){
+    const a=pts[i],nm=rk.normals[i];
+    if((px-a.x)*nm.x+(py-a.y)*nm.y>0) return false;
+  }
+  return true;
 }
 function solidPoint(x,y){
   if(x<0||y<0||x>AW||y>AH) return true;
-  for(const c of cubes){if(x>c.x&&x<c.x+c.w&&y>c.y&&y<c.y+c.h) return true;}
+  for(const rk of rocks) if(pointInRock(x,y,rk)) return true;
   return false;
 }
-function solidCircle(x,y,r){
-  for(const c of cubes){if(x+r>c.x&&x-r<c.x+c.w&&y+r>c.y&&y-r<c.y+c.h) return true;}
-  return false;
+// Circle vs rocks → contact {nx,ny,depth} (normal points out of the rock) or null
+function rockContact(x,y,r){
+  for(const rk of rocks){
+    if(Math.hypot(x-rk.cx,y-rk.cy)>rk.br+r) continue;
+    const pts=rk.pts,n=pts.length;
+    let inside=true,best=Infinity,bnx=0,bny=0,bestSigned=-Infinity,snx=0,sny=0;
+    for(let i=0;i<n;i++){
+      const a=pts[i],b=pts[(i+1)%n],nm=rk.normals[i];
+      const sd=(x-a.x)*nm.x+(y-a.y)*nm.y;
+      if(sd>0) inside=false;
+      if(sd>bestSigned){bestSigned=sd;snx=nm.x;sny=nm.y;}
+      // closest point on segment
+      const ex=b.x-a.x,ey=b.y-a.y,len2=ex*ex+ey*ey||1;
+      let t=((x-a.x)*ex+(y-a.y)*ey)/len2;t=Math.max(0,Math.min(1,t));
+      const qx=a.x+ex*t,qy=a.y+ey*t,d=Math.hypot(x-qx,y-qy);
+      if(d<best){best=d;bnx=d>1e-6?(x-qx)/d:nm.x;bny=d>1e-6?(y-qy)/d:nm.y;}
+    }
+    if(inside) return{nx:snx,ny:sny,depth:r-bestSigned};
+    if(best<r) return{nx:bnx,ny:bny,depth:r-best};
+  }
+  return null;
 }
-// Oriented hull vs walls — samples the hull outline (spacing < cube size)
+// Oriented hull vs rocks/edges
 function hullBlocked(x,y,angle){
   const hl=hullHalfLen(),hw=hullHalfW();
   const ca=Math.cos(angle),sa=Math.sin(angle);
-  const step=Math.max(6,CUBE_SZ*.45);
+  const step=Math.max(5,hw*.45);
   const nx=Math.max(2,Math.ceil(2*hl/step)),ny=Math.max(2,Math.ceil(2*hw/step));
   const test=(lx,ly)=>solidPoint(x+lx*ca-ly*sa,y+lx*sa+ly*ca);
   for(let i=0;i<=nx;i++){const lx=-hl+2*hl*i/nx;if(test(lx,-hw)||test(lx,hw))return true;}
   for(let j=1;j<ny;j++){const ly=-hw+2*hw*j/ny;if(test(-hl,ly)||test(hl,ly))return true;}
+  // rock corners poking into the hull between samples
+  const reach=Math.hypot(hl,hw);
+  for(const rk of rocks){
+    if(Math.hypot(rk.cx-x,rk.cy-y)>rk.br+reach) continue;
+    for(const q of rk.pts){
+      const rx=q.x-x,ry=q.y-y;
+      const lx=rx*ca+ry*sa,ly=-rx*sa+ry*ca;
+      if(Math.abs(lx)<hl&&Math.abs(ly)<hw) return true;
+    }
+  }
   return false;
 }
 
@@ -426,7 +601,7 @@ function placePowerups(){
     for(let a=0;a<300;a++){
       const x=margin+Math.random()*(AW-margin*2);
       const y=margin+Math.random()*(AH-margin*2);
-      if(solidCircle(x,y,28)) continue;
+      if(rockContact(x,y,UNIT*.55)) continue;
       if(Math.hypot(x-p1.x,y-p1.y)<120) continue;
       if(Math.hypot(x-p2.x,y-p2.y)<120) continue;
       if(used.some(u=>Math.hypot(u.x-x,u.y-y)<70)) continue;
@@ -550,21 +725,24 @@ function updateGame(dt){
       rem-=step;
       b.x+=b.dx*step;b.y+=b.dy*step;
 
-      const oob=b.x<BR||b.x>AW-BR||b.y<BR||b.y>AH-BR;
-      const inWall=!b.pierce&&solidAtRect(b.x-BR,b.y-BR,BR*2,BR*2);
-      if(oob||inWall){
+      const oobX=b.x<BR||b.x>AW-BR,oobY=b.y<BR||b.y>AH-BR;
+      const hit=b.pierce?null:rockContact(b.x,b.y,BR);
+      if(oobX||oobY||hit){
         if(b.bounces>=MAX_BOUNCES){
           spawnExplosion(b.x,b.y,b.col,.45);sfxWallHit();
           bullets.splice(i,1);removed=true;break;
         }
         b.bounces++;
         spawnWallSparks(b.x,b.y,b.col);sfxRicochet();
-        b.x-=b.dx*step*2;b.y-=b.dy*step*2;
-        const hitX=solidAtRect(b.x+b.dx*BR*2-BR,b.y-BR,BR*2,BR*2)||b.x+b.dx*step<BR||b.x+b.dx*step>AW-BR;
-        const hitY=solidAtRect(b.x-BR,b.y+b.dy*BR*2-BR,BR*2,BR*2)||b.y+b.dy*step<BR||b.y+b.dy*step>AH-BR;
-        if(hitX) b.dx=-b.dx;
-        if(hitY) b.dy=-b.dy;
-        if(!hitX&&!hitY){b.dx=-b.dx;b.dy=-b.dy;}
+        if(oobX){b.dx=-b.dx;b.x=Math.max(BR,Math.min(AW-BR,b.x));}
+        if(oobY){b.dy=-b.dy;b.y=Math.max(BR,Math.min(AH-BR,b.y));}
+        if(hit&&!oobX&&!oobY){
+          // reflect off the rock face
+          const d=b.dx*hit.nx+b.dy*hit.ny;
+          if(d<0){b.dx-=2*d*hit.nx;b.dy-=2*d*hit.ny;}
+          const l=Math.hypot(b.dx,b.dy)||1;b.dx/=l;b.dy/=l;
+          b.x+=hit.nx*(hit.depth+.5);b.y+=hit.ny*(hit.depth+.5);
+        }
         break;
       }
 
@@ -862,8 +1040,48 @@ function endRound(winner){
   }
   document.getElementById('roundbadge').textContent='Round '+round+' · first to 3';
   roundOverlay.style.display='flex';
+  openMenu(roundOverlay);
 }
-ovBtn.addEventListener('click',()=>{roundOverlay.style.display='none';initRound();});
+ovBtn.addEventListener('click',()=>{closeMenu();roundOverlay.style.display='none';initRound();});
+document.getElementById('ov-lobby').addEventListener('click',()=>{
+  closeMenu();roundOverlay.style.display='none';
+  gameActive=false;scores={p1:0,p2:0};round=1;bullets=[];particles=[];
+  updateHUD();
+  socket.emit('host_back_to_lobby');
+  applyLobbyUpdate({A:true,B:true,readyA:false,readyB:false});
+  showScreen('screen-lobby');
+});
+
+// ═══════════════════════════════════════════════════════
+//  MENU — on-screen buttons driven from the phones
+//  arrows move the highlight, FIRE presses it
+// ═══════════════════════════════════════════════════════
+let menuEl=null,menuFocus=0,menuLockUntil=0;
+function menuButtons(){return menuEl?[...menuEl.querySelectorAll('.menu .btn')].filter(b=>b.offsetParent!==null):[];}
+function openMenu(el){
+  menuEl=el;menuFocus=0;
+  menuLockUntil=performance.now()+900;   // don't let a last-second shot click "Next round"
+  setMenuFocus(0);
+  menuEl.querySelectorAll('.menu .btn').forEach((b,i)=>b.onmousemove=()=>{if(performance.now()>menuLockUntil&&menuFocus!==i)setMenuFocus(i);});
+}
+function closeMenu(){
+  menuButtons().forEach(b=>b.classList.remove('focus'));
+  menuEl=null;
+  socket.emit('host_ui',{menu:false});
+}
+function setMenuFocus(i){
+  const btns=menuButtons();if(!btns.length) return;
+  menuFocus=(i+btns.length)%btns.length;
+  btns.forEach((b,k)=>b.classList.toggle('focus',k===menuFocus));
+  socket.emit('host_ui',{menu:true,items:btns.map(b=>b.textContent),focus:menuFocus});
+}
+function menuMove(d){if(menuEl&&performance.now()>menuLockUntil) setMenuFocus(menuFocus+d);}
+function menuSelect(){
+  if(!menuEl||performance.now()<menuLockUntil) return;
+  const b=menuButtons()[menuFocus];if(!b) return;
+  b.classList.add('pressed');setTimeout(()=>b.click(),120);
+  menuLockUntil=performance.now()+600;
+}
 
 let toastTimer;
 function toast(msg){
@@ -872,16 +1090,17 @@ function toast(msg){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.opacity='0',2400);
 }
 
-function spawnSafeMargin(){return CUBE_SZ+TANK_R*1.35+6;}
+function spawnSafeMargin(){return hullHalfLen()+UNIT*.7;}
 function spawnPlayers(){
   const m=spawnSafeMargin();
   p1=makePlayer(m,m,'A','Player A',1,0);
   p2=makePlayer(AW-m,AH-m,'B','Player B',2,Math.PI);
 }
 function initRound(){
-  resize();genCubes();
+  resize();computeScale();
   bullets=[];particles=[];
   spawnPlayers();
+  genArena();
   placePowerups();gameActive=true;updateHUD();
   document.getElementById('roundbadge').textContent='Round '+round+' · first to 3';
 }
@@ -907,8 +1126,13 @@ function handleCtrlInput({slot,dir,pressed}){
   if(dir==='down') s.fwd =pressed?-1:(s.fwd===-1 ?0:s.fwd);
   if(dir==='left') s.turn=pressed?-1:(s.turn===-1?0:s.turn);
   if(dir==='right')s.turn=pressed?1 :(s.turn===1 ?0:s.turn);
+  if(menuEl&&pressed){
+    if(dir==='left'||dir==='up') menuMove(-1);
+    if(dir==='right'||dir==='down') menuMove(1);
+  }
 }
 function handleCtrlFire({slot}){
+  if(menuEl){menuSelect();return;}
   if(!gameActive)return;
   if(slot==='A')shoot(p1);
   if(slot==='B')shoot(p2);
@@ -958,7 +1182,7 @@ socket.on('player_left',({slot})=>{
 socket.on('game_event',({event,data})=>{if(event==='lobby_ready_update') applyLobbyUpdate(data);});
 socket.on('game_start',()=>{
   hideScreens();
-  roundOverlay.style.display='none';
+  roundOverlay.style.display='none';closeMenu();
   scores={p1:0,p2:0};round=1;
   initRound();
 });
@@ -968,7 +1192,7 @@ socket.on('ctrl_fire',handleCtrlFire);
 // ═══════════════════════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════════════════════
-resize();genCubes();spawnPlayers();updateHUD();
+resize();computeScale();spawnPlayers();genArena();updateHUD();
 showScreen('screen-home');
 requestAnimationFrame(ts=>{lastTs=ts;requestAnimationFrame(loop);});
 </script>

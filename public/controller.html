@@ -6,12 +6,12 @@
 <meta name="theme-color" content="#d8d7d2">
 <title>Tank War — Controller</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@font-face{font-family:'Unbounded';src:url('/fonts/Unbounded-Variable.woff2') format('woff2');font-weight:200 900;font-display:swap}
 :root{
   --paper:#d8d7d2;--card:#e6e5e0;--ink:#1b1b1a;--ink-2:#3b3b39;--mute:#76756f;--line:#a6a59f;
   --me:#1b1b1a;           /* set to the player's colour after joining */
-  --display:'Space Grotesk','Helvetica Neue',Arial,sans-serif;
-  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --display:'Unbounded','Helvetica Neue',Arial,sans-serif;
+  --mono:'Unbounded','Helvetica Neue',Arial,sans-serif;
 }
 body.slot-B{--me:#1a4361}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -27,20 +27,20 @@ body::after{
 
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;transition:opacity .25s}
 .screen.hidden{opacity:0;pointer-events:none}
-.kicker{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--mute)}
-.title{font-size:2.6rem;font-weight:700;letter-spacing:-.04em;line-height:.9;text-transform:uppercase}
+.kicker{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--mute)}
+.title{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:.9;text-transform:uppercase}
 
 /* join */
 .field{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px}
 #code-input{
-  width:100%;padding:14px;text-align:center;letter-spacing:.35em;background:var(--card);
+  width:100%;padding:14px;text-align:center;letter-spacing:0.16em;background:var(--card);
   border:2px solid var(--ink);color:var(--ink);font-family:var(--mono);font-size:1.5rem;font-weight:700;outline:none;border-radius:0;
   -webkit-user-select:text;user-select:text;
 }
 #error-msg{font-family:var(--mono);font-size:.68rem;color:#8a4f3c;min-height:1em;font-weight:700;text-align:center}
 .btn{
   width:100%;max-width:300px;padding:16px;background:var(--ink);color:var(--paper);border:2px solid var(--ink);border-radius:0;
-  font-family:var(--mono);font-size:.85rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  font-family:var(--mono);font-size:.85rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
   box-shadow:5px 5px 0 var(--line);transition:transform .08s,box-shadow .08s;cursor:pointer;
 }
 .btn:active,.btn.pressed{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--line)}
@@ -48,9 +48,9 @@ body::after{
 
 /* lobby */
 .me-tank{width:180px;height:89px}
-.slot-tag{font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--me)}
+.slot-tag{font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:0.11em;text-transform:uppercase;color:var(--me)}
 .lobby-status{font-size:.85rem;color:var(--ink-2);text-align:center;font-weight:500}
-.dots{display:flex;gap:18px;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.14em;color:var(--mute);text-transform:uppercase}
+.dots{display:flex;gap:18px;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:0.06em;color:var(--mute);text-transform:uppercase}
 .ri{display:flex;align-items:center;gap:7px}
 .ri-dot{width:10px;height:10px;border:2px solid var(--line)}
 .ri-dot.on{border-color:var(--ink);background:transparent}
@@ -67,7 +67,7 @@ body::after{
 /* ── CONTROLLER ── */
 #controller-screen{flex-direction:row;justify-content:space-between;align-items:center;padding:16px max(28px,env(safe-area-inset-right)) 16px max(28px,env(safe-area-inset-left))}
 .side{display:flex;flex-direction:column;align-items:center;gap:10px}
-.cap{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--mute)}
+.cap{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:0.11em;text-transform:uppercase;color:var(--mute)}
 
 .dpad{width:min(210px,52vh);height:min(210px,52vh);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:5px}
 .dpad-btn{
@@ -83,7 +83,7 @@ body::after{
 
 .center-info{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .center-info svg{width:min(140px,22vw);height:auto}
-#ctrl-status{font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.18em;color:var(--mute);text-transform:uppercase}
+#ctrl-status{font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:0.08em;color:var(--mute);text-transform:uppercase}
 
 .fire{
   width:min(170px,44vh);height:min(170px,44vh);border-radius:50%;
@@ -94,7 +94,7 @@ body::after{
 .fire::before{content:'';position:absolute;inset:12%;border-radius:50%;border:2px dashed var(--line)}
 .fire svg{width:46%;height:46%;position:relative}
 .fire svg *{stroke:var(--ink);fill:none}
-.fire .lbl{position:absolute;bottom:17%;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.3em;color:var(--ink)}
+.fire .lbl{position:absolute;bottom:17%;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:0.14em;color:var(--ink)}
 .fire.active{background:var(--me);transform:translate(4px,4px);box-shadow:2px 2px 0 var(--line)}
 .fire.active svg *{stroke:var(--paper)}
 .fire.active .lbl{color:var(--paper)}
@@ -107,7 +107,16 @@ body::after{
 @keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
 
 /* banner */
-#banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--ink);color:var(--paper);text-align:center;font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.12em;padding:8px 0;display:none;text-transform:uppercase}
+#banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--ink);color:var(--paper);text-align:center;font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:0.05em;padding:8px 0;display:none;text-transform:uppercase}
+
+/* menu mode — the big screen is showing buttons */
+#menu-card{display:none;flex-direction:column;align-items:center;gap:10px;max-width:min(260px,34vw)}
+body.menu-mode #menu-card{display:flex}
+body.menu-mode .center-info .ctrl-tank,body.menu-mode #ctrl-badge,body.menu-mode #ctrl-status{display:none}
+.menu-items{display:flex;flex-direction:column;gap:6px;width:100%}
+.menu-item{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:9px 12px;border:2px solid var(--line);color:var(--mute);text-align:center}
+.menu-item.on{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+body.menu-mode .dpad-btn.d-up,body.menu-mode .dpad-btn.d-down{opacity:.35}
 </style>
 </head>
 <body>
@@ -168,6 +177,11 @@ body::after{
     <svg class="ctrl-tank" data-tank="A" viewBox="0 0 172 85"></svg>
     <div class="slot-tag" id="ctrl-badge">Player A</div>
     <div id="ctrl-status">In battle</div>
+    <div id="menu-card">
+      <div class="kicker">On screen</div>
+      <div class="menu-items" id="menu-items"></div>
+      <div class="cap">◀ ▶ choose · Fire select</div>
+    </div>
   </div>
 
   <div class="side">
@@ -179,7 +193,7 @@ body::after{
       </svg>
       <span class="lbl">FIRE</span>
     </div>
-    <div class="cap">Tap to shoot</div>
+    <div class="cap" id="fire-cap">Tap to shoot</div>
   </div>
 </div>
 
@@ -283,7 +297,25 @@ socket.on('game_event',({event,data})=>{
     if(gameStarted&&data.A&&data.B) document.getElementById('ctrl-status').textContent='In battle';
   }
 });
-socket.on('game_start',()=>{isReady=false;gameStarted=true;showScreen('controller');});
+socket.on('game_start',()=>{isReady=false;gameStarted=true;setMenu({menu:false});showScreen('controller');});
+
+// ── Big-screen menu mirror ──
+const fireLbl=document.querySelector('#action-btn .lbl');
+function setMenu(ui){
+  const on=!!(ui&&ui.menu);
+  document.body.classList.toggle('menu-mode',on);
+  fireLbl.textContent=on?'SELECT':'FIRE';
+  document.getElementById('fire-cap').textContent=on?'Tap to select':'Tap to shoot';
+  const box=document.getElementById('menu-items');
+  box.innerHTML=on?(ui.items||[]).map((t,i)=>`<div class="menu-item${i===ui.focus?' on':''}">${t}</div>`).join(''):'';
+}
+socket.on('host_ui',setMenu);
+socket.on('back_to_lobby',()=>{
+  gameStarted=false;setMenu({menu:false});
+  isReady=false;readyBtn.textContent='Ready';readyBtn.classList.remove('done');
+  document.getElementById('lobby-status').textContent='Back in the lobby — press Ready for a new match';
+  showScreen('lobby');
+});
 
 function updateDots(present,ready){
   for(const s of ['A','B']){

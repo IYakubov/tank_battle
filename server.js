@@ -158,6 +158,24 @@ io.on('connection', (socket) => {
     io.to(room.hostSocketId).emit('ctrl_fire', { slot });
   });
 
+  // ── HOST: on-screen menu state (so phones can show "◀ ▶ choose · FIRE select") ──
+  socket.on('host_ui', (ui) => {
+    const code = socket.data.hostCode;
+    if (!code || !rooms[code]) return;
+    io.to(code).emit('host_ui', ui);
+  });
+
+  // ── HOST: leave the match and go back to the lobby (players stay connected) ──
+  socket.on('host_back_to_lobby', () => {
+    const code = socket.data.hostCode;
+    const room = rooms[code];
+    if (!room) return;
+    room.started = false;
+    room.ready = { A: false, B: false };
+    io.to(code).emit('back_to_lobby');
+    broadcastLobby(code);
+  });
+
   // ── Latency diagnostic ──
   socket.on('ping_check', (cb) => { if (typeof cb === 'function') cb(); });
 
