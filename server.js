@@ -78,6 +78,7 @@ io.on('connection', (socket) => {
       hostSocketId: socket.id,
       players: { A: null, B: null },
       ready: { A: false, B: false },
+      clientIds: { A: null, B: null },   // one id per phone (stored in its browser)
       started: false
     };
     socket.data.hostCode = code;
@@ -95,37 +96,63 @@ io.on('connection', (socket) => {
   });
 
   // ── CONTROLLER: join a game by code ──
-  socket.on('join_game', ({ code }) => {
-    const room = rooms[code];
-    if (!room) return socket.emit('join_error', 'Room not found');
-    if (room.started) return socket.emit('join_error', 'Game already started');
-    let slot = null;
-    if (!room.players.A) slot = 'A';
-    else if (!room.players.B) slot = 'B';
-    else return socket.emit('join_error', 'Room is full');
-
+  // A phone is identified by clientId (saved in its browser), so the same phone
+  // opening the link twice — QR-scanner preview + Chrome, a second tab, a reload —
+  // keeps ONE slot instead of taking both.
+  function bindSlot(room, code, slot, cid) {
+    const old = room.players[slot];
+    if (old && old !== socket.id) {
+      const os = io.sockets.sockets.get(old);
+      if (os) { os.data.slot = null; os.data.code = null; os.leave(code); os.emit('replaced'); }
+    }
+    // a socket can only ever hold one slot
+    for (const s of ['A', 'B']) if (s !== slot && room.players[s] === socket.id) { room.players[s] = null; room.ready[s] = false; room.clientIds[s] = null; }
     room.players[slot] = socket.id;
+    if (cid) room.clientIds[slot] = cid;
     socket.data.code = code;
     socket.data.slot = slot;
     socket.join(code);
     socket.emit('joined', { slot, code });
-
+    if (room.started) socket.emit('game_start');
     io.to(code).emit('player_joined', { slot, players: roomPresence(room) });
     if (room.hostSocketId) io.to(room.hostSocketId).emit('player_joined', { slot, players: roomPresence(room) });
     broadcastLobby(code);
+  }
+  const cleanId = (id) => (typeof id === 'string' && /^[\w-]{8,64}$/.test(id)) ? id : null;
+
+  socket.on('join_game', ({ code, clientId } = {}) => {
+    const room = rooms[code];
+    if (!room) return socket.emit('join_error', 'Room not found');
+    const cid = cleanId(clientId);
+    const ua = (socket.handshake.headers['user-agent'] || '').slice(0, 90);
+
+    // same socket asking again → same slot
+    if (socket.data.code === code && socket.data.slot && room.players[socket.data.slot] === socket.id) {
+      return socket.emit('joined', { slot: socket.data.slot, code });
+    }
+    // same phone already holds a slot → take it over
+    const mine = cid && ['A', 'B'].find(s => room.clientIds[s] === cid);
+    if (mine) {
+      console.log(`[${code}] phone re-opened → keeps slot ${mine}  (${ua})`);
+      return bindSlot(room, code, mine, cid);
+    }
+    if (room.started) return socket.emit('join_error', 'Game already started');
+    const slot = !room.players.A ? 'A' : !room.players.B ? 'B' : null;
+    if (!slot) return socket.emit('join_error', 'Room is full');
+    console.log(`[${code}] new phone → slot ${slot}  (${ua})`);
+    bindSlot(room, code, slot, cid);
   });
 
-  // ── CONTROLLER: rejoin after reconnect ──
-  socket.on('rejoin_game', ({ code, slot }) => {
+  // ── CONTROLLER: rejoin after a dropped connection ──
+  socket.on('rejoin_game', ({ code, slot, clientId } = {}) => {
     const room = rooms[code];
     if (!room || (slot !== 'A' && slot !== 'B')) return;
-    room.players[slot] = socket.id;
-    socket.data.code = code;
-    socket.data.slot = slot;
-    socket.join(code);
-    socket.emit('joined', { slot, code });
-    broadcastLobby(code);
-    if (room.started) socket.emit('game_start');
+    const cid = cleanId(clientId);
+    // only take the slot back if it's free or it was ours — never steal another phone's slot
+    if (room.players[slot] && room.players[slot] !== socket.id && room.clientIds[slot] !== cid) {
+      return socket.emit('join_error', 'Your slot was taken');
+    }
+    bindSlot(room, code, slot, cid);
   });
 
   // ── CONTROLLER: ready up ──
@@ -196,6 +223,8 @@ io.on('connection', (socket) => {
       if (room.players[slot] === socket.id) {
         room.players[slot] = null;
         room.ready[slot] = false;
+        // mid-match, remember the phone so it can come back to its tank after a reload
+        if (!room.started) room.clientIds[slot] = null;
         if (room.hostSocketId) io.to(room.hostSocketId).emit('player_left', { slot });
         io.to(code).emit('player_left', { slot });
         broadcastLobby(code);

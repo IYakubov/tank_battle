@@ -221,6 +221,23 @@ function paintTanks(team){
 paintTanks('A');
 
 const socket=io({transports:['websocket']});
+
+// One id per phone, kept in the browser, so a second tab / scanner preview
+// of the same phone reuses its slot instead of grabbing the other one.
+const CLIENT_ID=(()=>{
+  const make=()=>'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  try{let id=localStorage.getItem('tankwar_client');if(!id){id=make();localStorage.setItem('tankwar_client',id);}return id;}
+  catch(e){return make();}
+})();
+
+// Don't join from a hidden page (link previews, prerendering) — wait until
+// the player can actually see this tab.
+function whenVisible(fn){
+  if(document.prerendering){document.addEventListener('prerenderingchange',()=>whenVisible(fn),{once:true});return;}
+  if(document.visibilityState==='visible'){fn();return;}
+  const h=()=>{if(document.visibilityState==='visible'){document.removeEventListener('visibilitychange',h);fn();}};
+  document.addEventListener('visibilitychange',h);
+}
 let mySlot=null,myCode=null,gameStarted=false;
 
 // ── connection banner + rejoin ──
@@ -228,7 +245,14 @@ const banner=document.getElementById('banner');
 function showBanner(m){banner.textContent=m;banner.style.display='block';}
 function hideBanner(){banner.style.display='none';}
 socket.on('disconnect',()=>{if(mySlot&&myCode) showBanner('Connection lost — reconnecting…');});
-socket.on('connect',()=>{if(mySlot&&myCode) socket.emit('rejoin_game',{code:myCode,slot:mySlot});});
+socket.on('connect',()=>{if(mySlot&&myCode) socket.emit('rejoin_game',{code:myCode,slot:mySlot,clientId:CLIENT_ID});});
+// This phone opened the controller in another tab — this copy steps aside
+socket.on('replaced',()=>{
+  mySlot=null;myCode=null;gameStarted=false;
+  socket.disconnect();
+  showBanner('This controller is open in another tab');
+  showScreen('join');
+});
 
 // ── screens ──
 const joinScreen=document.getElementById('join-screen');
@@ -258,11 +282,11 @@ function doJoin(){
   const code=codeInput.value.trim();
   if(!/^\d{6}$/.test(code)){errorMsg.textContent='Enter the 6-digit code';return;}
   errorMsg.textContent='';
-  myCode=code;socket.emit('join_game',{code});
+  myCode=code;socket.emit('join_game',{code,clientId:CLIENT_ID});
 }
 {
   const urlCode=new URLSearchParams(location.search).get('code');
-  if(urlCode&&/^\d{6}$/.test(urlCode)){codeInput.value=urlCode;doJoin();}
+  if(urlCode&&/^\d{6}$/.test(urlCode)){codeInput.value=urlCode;whenVisible(doJoin);}
 }
 socket.on('join_error',m=>{errorMsg.textContent=m;showScreen('join');});
 
