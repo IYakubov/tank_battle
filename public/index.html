@@ -26,17 +26,7 @@
 html,body{width:100%;height:100%;overflow:hidden;background:var(--paper);color:var(--ink);font-family:var(--display);user-select:none}
 body{display:flex;flex-direction:column}
 
-/* ── FILM GRAIN over everything ── */
-body::after{
-  content:'';position:fixed;inset:-100px;pointer-events:none;z-index:9999;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  mix-blend-mode:overlay;opacity:.85;
-  animation:grain .6s steps(5) infinite;
-}
-@keyframes grain{
-  0%{transform:translate(0,0)}20%{transform:translate(-37px,21px)}40%{transform:translate(18px,-44px)}
-  60%{transform:translate(-12px,33px)}80%{transform:translate(41px,9px)}100%{transform:translate(0,0)}
-}
+
 .mono{font-family:var(--mono)}
 
 /* ── TOPBAR ── */
