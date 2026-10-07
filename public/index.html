@@ -45,11 +45,16 @@ body{display:flex;flex-direction:column}
 .hp-cell.on.A{background:var(--pA)} .hp-cell.on.B{background:var(--pB);border-color:var(--pB)}
 .tb-side.right .hp-cell{border-color:var(--pB)}
 .hpval{font-family:var(--mono);font-size:.62rem;color:var(--mute);font-weight:700;min-width:26px}
-.ammo-slots{display:flex;gap:3px;align-items:center;min-height:14px}
-.tb-side.right .ammo-slots{flex-direction:row-reverse}
-.ammo-label{font-family:var(--mono);font-size:.55rem;color:var(--mute);letter-spacing:0.05em;font-weight:700;margin:0 4px}
-.ammo-pip{width:4px;height:11px;background:var(--line);transition:background .15s}
-.ammo-pip.on.A{background:var(--pA)} .ammo-pip.on.B{background:var(--pB)}
+.reload-row{display:flex;gap:6px;align-items:center;min-height:14px}
+.tb-side.right .reload-row{flex-direction:row-reverse}
+.ammo-label{font-family:var(--mono);font-size:.5rem;color:var(--mute);letter-spacing:0.05em;font-weight:700;min-width:44px}
+.tb-side.right .ammo-label{text-align:right}
+.reload-bar{width:84px;height:6px;background:rgba(27,27,26,.12);position:relative;overflow:hidden}
+.reload-fill{position:absolute;left:0;top:0;bottom:0;width:100%}
+.tb-side.right .reload-fill{left:auto;right:0}
+.reload-fill.A{background:var(--pA)} .reload-fill.B{background:var(--pB)}
+.reload-row.ready .ammo-label{color:var(--ink)}
+.buffs{display:flex;align-items:center}
 .buff{width:14px;height:14px;margin:0 2px}
 .tb-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-left:2px solid var(--ink);border-right:2px solid var(--ink)}
 .game-title{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:0.14em;color:var(--mute)}
@@ -110,7 +115,7 @@ canvas{display:block;position:absolute;top:0;left:0}
 #round-overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:rgba(216,215,210,.94);z-index:100;padding:24px}
 #ov-title{font-size:clamp(1.3rem,3vw,2.5rem);font-weight:800;letter-spacing:-.02em;text-align:center;text-transform:uppercase;line-height:1}
 #ov-sub{font-family:var(--mono);font-size:.78rem;color:var(--ink-2);text-align:center;letter-spacing:0.04em}
-.legend{display:grid;grid-template-columns:1fr 1fr;gap:10px 30px;padding:16px 20px;border:2px solid var(--ink);background:var(--card)}
+.legend{display:grid;grid-template-columns:repeat(3,auto);gap:10px 30px;padding:16px 20px;border:2px solid var(--ink);background:var(--card)}
 .legend-item{display:flex;align-items:center;gap:10px;font-size:.82rem;font-weight:500;color:var(--ink-2)}
 .legend-item svg{width:22px;height:22px;flex-shrink:0}
 .legend-item b{font-weight:700;color:var(--ink)}
@@ -133,7 +138,7 @@ canvas{display:block;position:absolute;top:0;left:0}
     <div class="tb-info">
       <div class="tb-name cA">Player A</div>
       <div class="hprow"><div class="hp-cells" id="hp1"></div><span class="hpval" id="hpval1">5/5</span></div>
-      <div class="ammo-slots" id="ammo1"></div>
+      <div class="reload-row ready" id="rl1"><span class="ammo-label" id="rlt1">READY</span><div class="reload-bar"><div class="reload-fill A" id="rf1"></div></div><span class="buffs" id="buffs1"></span></div>
     </div>
   </div>
   <div class="tb-center">
@@ -146,7 +151,7 @@ canvas{display:block;position:absolute;top:0;left:0}
     <div class="tb-info">
       <div class="tb-name cB">Player B</div>
       <div class="hprow"><div class="hp-cells" id="hp2"></div><span class="hpval" id="hpval2">5/5</span></div>
-      <div class="ammo-slots" id="ammo2"></div>
+      <div class="reload-row ready" id="rl2"><span class="ammo-label" id="rlt2">READY</span><div class="reload-bar"><div class="reload-fill B" id="rf2"></div></div><span class="buffs" id="buffs2"></span></div>
     </div>
   </div>
 </div>
@@ -235,20 +240,14 @@ const PAL={
 };
 // Muted, greyed powerup tints
 const PU_DEF={
-  SPEED: {name:'Speed',      desc:'move faster for 5s',     color:'#66724f'},
   ARMOR: {name:'Shield',     desc:'blocks one hit',         color:'#4c6372'},
-  DBL:   {name:'Double shot',desc:'next shot fires two',    color:'#7d6f4c'},
   REPAIR:{name:'Repair',     desc:'restore 1 HP',           color:'#80534d'},
-  AMMO:  {name:'Reload',     desc:'full ammo, instant fire',color:'#566e69'},
   PIERCE:{name:'Pierce',     desc:'next shot goes through rocks',color:'#665a70'},
 };
 // 24×24 icon paths, used on canvas (Path2D) and in HTML (inline svg)
 const ICON={
-  SPEED:'M13 2 4 14h7l-1 8 10-13h-7z',
   ARMOR:'M12 2 20 5v6c0 5.5-3.5 9.5-8 11-4.5-1.5-8-5.5-8-11V5z',
-  DBL:'M8 3c2 2 2 3 2 5v13H6V8c0-2 0-3 2-5zM16 3c2 2 2 3 2 5v13h-4V8c0-2 0-3 2-5z',
   REPAIR:'M9 3h6v6h6v6h-6v6H9v-6H3V9h6z',
-  AMMO:'M4 4h16v3.5H4zM4 10.25h16v3.5H4zM4 16.5h16V20H4z',
   PIERCE:'M8 3h2.5v18H8zM2 10.5h13V6l7 6-7 6v-4.5H2z',
 };
 const ICON_P2D={};for(const k in ICON) ICON_P2D[k]=new Path2D(ICON[k]);
@@ -303,7 +302,7 @@ window.addEventListener('resize',()=>{resize();if(!gameActive){computeScale();sp
 // ═══════════════════════════════════════════════════════
 //  GAME CONSTANTS
 // ═══════════════════════════════════════════════════════
-const HP_MAX=5,AMMO_MAX=5,RELOAD_TIME=1800,ROUNDS_TO_WIN=3;
+const HP_MAX=5,RELOAD_TIME=1800,ROUNDS_TO_WIN=3;
 const TANK_SPEED=200;      // px/sec
 const TANK_TURN=1.3;       // rad/sec
 const BULLET_SPEED=520;    // px/sec
@@ -311,7 +310,7 @@ const BR=5;                // bullet radius
 const MAX_BOUNCES=3;
 let TANK_R=38;             // size unit, recalculated in computeScale()
 let CUBE_SZ=52;
-const PU_TYPES=['SPEED','ARMOR','DBL','REPAIR','AMMO','PIERCE','SPEED','REPAIR','AMMO','ARMOR'];
+const PU_TYPES=['ARMOR','REPAIR','PIERCE','ARMOR','REPAIR','PIERCE'];
 
 let cubes=[],bullets=[],particles=[],powerups=[];
 let scores={p1:0,p2:0},round=1,gameActive=false,tick=0,lastTs=0;
@@ -607,8 +606,8 @@ function placePowerups(){
 // ═══════════════════════════════════════════════════════
 function makePlayer(x,y,team,name,num,angle){
   return{x,y,team,col:team==='A'?PAL.A:PAL.B,name,num,
-    hp:HP_MAX,ammo:AMMO_MAX,angle,reloadTimer:0,
-    armorActive:false,dblActive:false,pierceActive:false,speedActive:false,speedEnd:0,
+    hp:HP_MAX,angle,reloadTimer:0,
+    armorActive:false,pierceActive:false,
     blink:0,recoil:0,tracks:[],lastTrack:null};
 }
 
@@ -637,14 +636,10 @@ function spawnBullet(p,lateral){
 }
 function shoot(p){
   if(!gameActive) return;
-  if(p.reloadTimer>0||p.ammo<=0) return;
-  p.ammo--;p.reloadTimer=RELOAD_TIME;
+  if(p.reloadTimer>0) return;           // still reloading
+  p.reloadTimer=RELOAD_TIME;
   sfxShoot();
-  if(p.dblActive){
-    const w=hullHalfW()*.32;
-    spawnBullet(p,-w);spawnBullet(p,w);
-    p.dblActive=false;
-  }else spawnBullet(p,0);
+  spawnBullet(p,0);
   if(p.pierceActive) p.pierceActive=false;
   p.recoil=1;
   const m=muzzlePoint(p,0);
@@ -662,15 +657,7 @@ function updateGame(dt){
   for(const p of[p1,p2]){
     if(p.blink>0) p.blink=Math.max(0,p.blink-dt);
     if(p.recoil>0) p.recoil=Math.max(0,p.recoil-dt/140);
-    if(p.reloadTimer>0){
-      p.reloadTimer=Math.max(0,p.reloadTimer-dt);
-      if(p.reloadTimer===0&&p.ammo<AMMO_MAX){
-        p.ammo=Math.min(AMMO_MAX,p.ammo+1);
-        if(p.ammo<AMMO_MAX) p.reloadTimer=RELOAD_TIME;
-        updateHUD();
-      }
-    }
-    if(p.speedActive&&Date.now()>p.speedEnd){p.speedActive=false;updateHUD();}
+    if(p.reloadTimer>0) p.reloadTimer=Math.max(0,p.reloadTimer-dt);
 
     const ctrl=p.num===1?netInput.A:netInput.B;
 
@@ -682,7 +669,7 @@ function updateGame(dt){
 
     // Drive, sliding along walls
     if(ctrl.fwd!==0){
-      const spd=(p.speedActive?1.9:1)*TANK_SPEED*sec*ctrl.fwd;
+      const spd=TANK_SPEED*sec*ctrl.fwd;
       const dx=Math.cos(p.angle)*spd,dy=Math.sin(p.angle)*spd;
       if(!hullBlocked(p.x+dx,p.y+dy,p.angle)){p.x+=dx;p.y+=dy;}
       else if(!hullBlocked(p.x+dx,p.y,p.angle)){p.x+=dx;}
@@ -784,9 +771,6 @@ function applyPowerup(p,type){
   const def=PU_DEF[type];
   if(type==='REPAIR') p.hp=Math.min(HP_MAX,p.hp+1);
   else if(type==='ARMOR') p.armorActive=true;
-  else if(type==='SPEED'){p.speedActive=true;p.speedEnd=Date.now()+5000;}
-  else if(type==='DBL') p.dblActive=true;
-  else if(type==='AMMO'){p.ammo=AMMO_MAX;p.reloadTimer=0;}
   else if(type==='PIERCE') p.pierceActive=true;
   toast(`${p.name} · ${def.name.toLowerCase()}`);
   spawnBurst(p.x,p.y,def.color,16);updateHUD();
@@ -914,17 +898,6 @@ function drawTanks(){
 
     ctx.save();
     ctx.translate(p.x,p.y);ctx.rotate(p.angle);
-    // speed streaks
-    if(p.speedActive){
-      ctx.strokeStyle=PU_DEF.SPEED.color;ctx.lineWidth=2;
-      for(let k=0;k<3;k++){
-        const off=((tick*3+k*13)%26);
-        ctx.globalAlpha=.55-off/60;
-        const yy=(k-1)*hw*.7;
-        ctx.beginPath();ctx.moveTo(-hl-6-off,yy);ctx.lineTo(-hl-18-off,yy);ctx.stroke();
-      }
-      ctx.globalAlpha=1;
-    }
     // drop shadow
     ctx.save();ctx.translate(3,4);ctx.scale(s,s);ctx.translate(-SVG_PIVOT_X,-SVG_PIVOT_Y);
     ctx.globalAlpha=.18;ctx.fillStyle=PAL.ink;
@@ -989,10 +962,8 @@ function updateHUD(){
     hp.innerHTML='';
     for(let h=0;h<HP_MAX;h++){const d=document.createElement('div');d.className='hp-cell '+p.team+(h<p.hp?' on':'');hp.appendChild(d);}
     document.getElementById('hpval'+i).textContent=p.hp+'/'+HP_MAX;
-    const el=document.getElementById('ammo'+i);el.innerHTML='';
-    const lbl=document.createElement('span');lbl.className='ammo-label';lbl.textContent='AMMO';el.appendChild(lbl);
-    for(let a=0;a<AMMO_MAX;a++){const d=document.createElement('div');d.className='ammo-pip '+p.team+(a<p.ammo?' on':'');el.appendChild(d);}
-    for(const [show,type] of [[p.armorActive,'ARMOR'],[p.dblActive,'DBL'],[p.pierceActive,'PIERCE'],[p.speedActive,'SPEED']]){
+    const el=document.getElementById('buffs'+i);el.innerHTML='';
+    for(const [show,type] of [[p.armorActive,'ARMOR'],[p.pierceActive,'PIERCE']]){
       if(!show) continue;
       const s=document.createElement('span');s.className='buff';s.innerHTML=iconSvg(type);el.appendChild(s);
     }
@@ -1095,6 +1066,18 @@ function initRound(){
   document.getElementById('roundbadge').textContent='Round '+round+' · first to 3';
 }
 
+// Reload status in the top bar: empties on each shot, refills over RELOAD_TIME
+const RL=[1,2].map(i=>({row:document.getElementById('rl'+i),txt:document.getElementById('rlt'+i),fill:document.getElementById('rf'+i)}));
+function drawReloadHUD(){
+  [p1,p2].forEach((p,k)=>{
+    if(!p) return;
+    const pct=1-p.reloadTimer/RELOAD_TIME, el=RL[k];
+    el.fill.style.width=(pct*100).toFixed(1)+'%';
+    const ready=p.reloadTimer<=0;
+    if(el.row.classList.contains('ready')!==ready){el.row.classList.toggle('ready',ready);el.txt.textContent=ready?'READY':'RELOAD';}
+  });
+}
+
 function loop(ts){
   const dt=Math.min(ts-lastTs,50);lastTs=ts;
   if(gameActive) updateGame(dt);
@@ -1103,6 +1086,7 @@ function loop(ts){
     for(const pu of powerups) if(!pu.collected) pu.anim+=dt*.003;
   }
   draw();
+  drawReloadHUD();
   requestAnimationFrame(loop);
 }
 

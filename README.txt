@@ -23,7 +23,7 @@ PLAY
 
 CONTROLS (phone)
   D-pad up/down = drive forward/back, left/right = turn
-  FIRE = one shot per tap (shell leaves from the barrel tip)
+  Round button = one shot per tap (shell leaves from the barrel tip)
 
 MENUS FROM THE PHONE
   When the big screen shows buttons (Next round / Back to lobby), the
@@ -33,7 +33,8 @@ MENUS FROM THE PHONE
 RULES
   First to 3 round wins. 5 HP each. Shells ricochet off rocks and the arena edge 3 times,
   then burst; after one bounce they can hit their own tank.
-  Powerups: Speed, Shield, Double shot, Repair, Reload, Pierce.
+  Powerups: Shield (blocks one hit), Repair (+1 HP), Pierce (next shot
+  goes through rocks). One shot, then a 1.8 s reload shown in the top bar.
 
 FILES
   server.js               rooms, lobby, input relay, QR generation

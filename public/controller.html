@@ -88,10 +88,8 @@ html,body{height:100%;width:100%;background:var(--paper);color:var(--ink);font-f
 .fire::before{content:'';position:absolute;inset:12%;border-radius:50%;border:2px dashed var(--line)}
 .fire svg{width:46%;height:46%;position:relative}
 .fire svg *{stroke:var(--ink);fill:none}
-.fire .lbl{position:absolute;bottom:17%;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:0.14em;color:var(--ink)}
 .fire.active{background:var(--me);transform:translate(4px,4px);box-shadow:2px 2px 0 var(--line)}
 .fire.active svg *{stroke:var(--paper)}
-.fire.active .lbl{color:var(--paper)}
 .fire.active::before{border-color:rgba(233,232,227,.4)}
 
 /* rotate overlay */
@@ -185,7 +183,6 @@ body.menu-mode .dpad-btn.d-up,body.menu-mode .dpad-btn.d-down{opacity:.35}
         <line x1="24" y1="3" x2="24" y2="15"/><line x1="24" y1="33" x2="24" y2="45"/>
         <line x1="3" y1="24" x2="15" y2="24"/><line x1="33" y1="24" x2="45" y2="24"/>
       </svg>
-      <span class="lbl">FIRE</span>
     </div>
     <div class="cap" id="fire-cap">Tap to shoot</div>
   </div>
@@ -318,11 +315,9 @@ socket.on('game_event',({event,data})=>{
 socket.on('game_start',()=>{isReady=false;gameStarted=true;setMenu({menu:false});showScreen('controller');});
 
 // ── Big-screen menu mirror ──
-const fireLbl=document.querySelector('#action-btn .lbl');
 function setMenu(ui){
   const on=!!(ui&&ui.menu);
   document.body.classList.toggle('menu-mode',on);
-  fireLbl.textContent=on?'SELECT':'FIRE';
   document.getElementById('fire-cap').textContent=on?'Tap to select':'Tap to shoot';
   const box=document.getElementById('menu-items');
   box.innerHTML=on?(ui.items||[]).map((t,i)=>`<div class="menu-item${i===ui.focus?' on':''}">${t}</div>`).join(''):'';
