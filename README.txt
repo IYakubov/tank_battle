@@ -41,3 +41,4 @@ FILES
   public/index.html       big screen (game, physics, rendering, sounds)
   public/controller.html  phone controller
   public/fonts/           Unbounded variable font (OFL licence)
+  public/audio/           tank_epic.mp3 background music (loops during battle)
