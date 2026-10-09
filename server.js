@@ -72,13 +72,14 @@ function broadcastLobby(code) {
 io.on('connection', (socket) => {
 
   // ── HOST: create a new game ──
-  socket.on('create_game', async () => {
+  socket.on('create_game', async ({ mode } = {}) => {
     const code = genCode();
     rooms[code] = {
       hostSocketId: socket.id,
       players: { A: null, B: null },
       ready: { A: false, B: false },
       clientIds: { A: null, B: null },   // one id per phone (stored in its browser)
+      mode: mode === 'solo' ? 'solo' : 'duo', // solo = 1 phone vs the bot (bot runs on the host screen)
       started: false
     };
     socket.data.hostCode = code;
@@ -112,7 +113,7 @@ io.on('connection', (socket) => {
     socket.data.code = code;
     socket.data.slot = slot;
     socket.join(code);
-    socket.emit('joined', { slot, code });
+    socket.emit('joined', { slot, code, mode: room.mode });
     if (room.started) socket.emit('game_start');
     io.to(code).emit('player_joined', { slot, players: roomPresence(room) });
     if (room.hostSocketId) io.to(room.hostSocketId).emit('player_joined', { slot, players: roomPresence(room) });
@@ -128,7 +129,7 @@ io.on('connection', (socket) => {
 
     // same socket asking again → same slot
     if (socket.data.code === code && socket.data.slot && room.players[socket.data.slot] === socket.id) {
-      return socket.emit('joined', { slot: socket.data.slot, code });
+      return socket.emit('joined', { slot: socket.data.slot, code, mode: room.mode });
     }
     // same phone already holds a slot → take it over
     const mine = cid && ['A', 'B'].find(s => room.clientIds[s] === cid);
@@ -137,8 +138,8 @@ io.on('connection', (socket) => {
       return bindSlot(room, code, mine, cid);
     }
     if (room.started) return socket.emit('join_error', 'Game already started');
-    const slot = !room.players.A ? 'A' : !room.players.B ? 'B' : null;
-    if (!slot) return socket.emit('join_error', 'Room is full');
+    const slot = !room.players.A ? 'A' : (room.mode !== 'solo' && !room.players.B) ? 'B' : null;
+    if (!slot) return socket.emit('join_error', room.mode === 'solo' ? 'This is a 1-player game' : 'Room is full');
     console.log(`[${code}] new phone → slot ${slot}  (${ua})`);
     bindSlot(room, code, slot, cid);
   });
@@ -164,7 +165,10 @@ io.on('connection', (socket) => {
     room.ready[slot] = true;
     broadcastLobby(code);
 
-    if (room.ready.A && room.ready.B && room.players.A && room.players.B && !room.started) {
+    const allReady = room.mode === 'solo'
+      ? room.ready.A && room.players.A
+      : room.ready.A && room.ready.B && room.players.A && room.players.B;
+    if (allReady && !room.started) {
       room.started = true;
       io.to(code).emit('game_start');
       if (room.hostSocketId) io.to(room.hostSocketId).emit('game_start');

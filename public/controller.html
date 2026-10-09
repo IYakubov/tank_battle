@@ -146,7 +146,7 @@ body.menu-mode .dpad-btn.d-up,body.menu-mode .dpad-btn.d-down{opacity:.35}
     <div class="lobby-status" id="lobby-status">Waiting for the other player…</div>
     <div class="dots">
       <div class="ri"><div class="ri-dot" id="dot-a"></div><span>A</span></div>
-      <div class="ri"><div class="ri-dot" id="dot-b"></div><span>B</span></div>
+      <div class="ri"><div class="ri-dot" id="dot-b"></div><span id="dot-b-label">B</span></div>
     </div>
     <button class="btn" id="ready-btn">Ready</button>
   </div>
@@ -281,9 +281,12 @@ function doJoin(){
 }
 socket.on('join_error',m=>{errorMsg.textContent=m;showScreen('join');});
 
-socket.on('joined',({slot,code})=>{
+let soloMode=false;
+socket.on('joined',({slot,code,mode})=>{
   hideBanner();
   mySlot=slot;myCode=code;
+  soloMode=mode==='solo';
+  document.getElementById('dot-b-label').textContent=soloMode?'BOT':'B';
   document.body.classList.toggle('slot-B',slot==='B');
   paintTanks(slot);
   document.getElementById('my-slot-badge').textContent='Player '+slot;
@@ -291,7 +294,7 @@ socket.on('joined',({slot,code})=>{
   document.getElementById('ctrl-badge').textContent='Player '+slot;
   if(!gameStarted){
     isReady=false;readyBtn.textContent='Ready';readyBtn.classList.remove('done');
-    document.getElementById('lobby-status').textContent='Waiting for the other player…';
+    document.getElementById('lobby-status').textContent=soloMode?'1 player vs bot — press Ready to start':'Waiting for the other player…';
     updateDots({A:false,B:false},{A:false,B:false});
     showScreen('lobby');
   }
@@ -299,7 +302,7 @@ socket.on('joined',({slot,code})=>{
 
 socket.on('player_joined',({players})=>{
   updateDots({A:!!players.A,B:!!players.B},{A:false,B:false});
-  if(players.A&&players.B) document.getElementById('lobby-status').textContent='Both players in — press Ready';
+  if(!soloMode&&players.A&&players.B) document.getElementById('lobby-status').textContent='Both players in — press Ready';
 });
 socket.on('player_left',({slot})=>{
   document.getElementById('lobby-status').textContent='Player '+slot+' disconnected…';
@@ -331,6 +334,7 @@ socket.on('back_to_lobby',()=>{
 });
 
 function updateDots(present,ready){
+  if(soloMode){present={...present,B:true};ready={...ready,B:true};}   // the bot is always ready
   for(const s of ['A','B']){
     document.getElementById('dot-'+s.toLowerCase()).className='ri-dot'+(ready[s]?' ready':present[s]?' on':'');
   }
