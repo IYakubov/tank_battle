@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tank War</title>
-<script src="/socket.io/socket.io.js"></script>
+<script>window.__SC_BASE=location.pathname.replace(/[^/]*$/,'');</script><script src="socket.io/socket.io.js"></script>
 <style>
-@font-face{font-family:'Unbounded';src:url('/fonts/Unbounded-Variable.woff2') format('woff2');font-weight:200 900;font-display:swap}
+@font-face{font-family:'Unbounded';src:url('fonts/Unbounded-Variable.woff2') format('woff2');font-weight:200 900;font-display:swap}
 :root{
   --paper:#d8d7d2;
   --paper-2:#cbcac4;
@@ -1134,7 +1134,7 @@ function applyLobbyUpdate(d){
 // ═══════════════════════════════════════════════════════
 //  SOCKET.IO
 // ═══════════════════════════════════════════════════════
-const socket=io();
+const socket=io({path:window.__SC_BASE+'socket.io'});
 let myCode=null;
 
 document.getElementById('btn-create').addEventListener('click',()=>socket.emit('create_game'));

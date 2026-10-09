@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#d8d7d2">
 <title>Tank War — Controller</title>
 <style>
-@font-face{font-family:'Unbounded';src:url('/fonts/Unbounded-Variable.woff2') format('woff2');font-weight:200 900;font-display:swap}
+@font-face{font-family:'Unbounded';src:url('fonts/Unbounded-Variable.woff2') format('woff2');font-weight:200 900;font-display:swap}
 :root{
   --paper:#d8d7d2;--card:#e6e5e0;--ink:#1b1b1a;--ink-2:#3b3b39;--mute:#76756f;--line:#a6a59f;
   --me:#1b1b1a;           /* set to the player's colour after joining */
@@ -188,7 +188,7 @@ body.menu-mode .dpad-btn.d-up,body.menu-mode .dpad-btn.d-down{opacity:.35}
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script>window.__SC_BASE=location.pathname.replace(/[^/]*$/,'');</script><script src="socket.io/socket.io.js"></script>
 <script>
 // ── Tank artwork (same as host) ──
 const TANK_PATHS=[
@@ -211,7 +211,7 @@ function paintTanks(team){
 }
 paintTanks('A');
 
-const socket=io({transports:['websocket']});
+const socket=io({path:window.__SC_BASE+'socket.io',transports:['websocket']});
 
 // One id per phone, kept in the browser, so a second tab / scanner preview
 // of the same phone reuses its slot instead of grabbing the other one.

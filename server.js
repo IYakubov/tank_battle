@@ -37,12 +37,22 @@ function lanIP() {
   );
 }
 
+// Public address of this game, e.g. https://sharedcouch.online/mathduel
+// (the Shared Couch front door sends X-Forwarded-Proto / -Host / -Prefix).
+function publicPrefix(h) {
+  return String(h['x-forwarded-prefix'] || '').split(',')[0].trim().replace(/\/+$/, '');
+}
+function publicProto(h) {
+  return String(h['x-forwarded-proto'] || 'http').split(',')[0].trim();
+}
 function joinBase(socket) {
-  const hostHeader = socket.handshake.headers.host || ('localhost:' + PORT);
+  const hdr = socket.handshake.headers;
+  const hostHeader = String(hdr['x-forwarded-host'] || hdr.host || ('localhost:' + PORT)).split(',')[0].trim();
   const [hostname, port] = hostHeader.split(':');
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
   const h = isLocal ? lanIP() : hostname;
-  return 'http://' + h + (port ? ':' + port : '');
+  if (isLocal) return 'http://' + h + (port ? ':' + port : '');
+  return publicProto(hdr) + '://' + hostHeader + publicPrefix(hdr);
 }
 
 // ── ROOM STATE ──
