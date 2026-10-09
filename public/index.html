@@ -149,7 +149,7 @@ canvas{display:block;position:absolute;top:0;left:0}
   <div class="tb-side right">
     <svg class="tb-tank" data-tank="B" viewBox="0 0 172 85" style="transform:scaleX(-1)"></svg>
     <div class="tb-info">
-      <div class="tb-name cB" id="tb-name-B">Player B</div>
+      <div class="tb-name cB">Player B</div>
       <div class="hprow"><div class="hp-cells" id="hp2"></div><span class="hpval" id="hpval2">5/5</span></div>
       <div class="reload-row ready" id="rl2"><span class="ammo-label" id="rlt2">READY</span><div class="reload-bar"><div class="reload-fill B" id="rf2"></div></div><span class="buffs" id="buffs2"></span></div>
     </div>
@@ -162,16 +162,13 @@ canvas{display:block;position:absolute;top:0;left:0}
 
   <!-- HOME -->
   <div class="screen" id="screen-home">
-    <div class="kicker">1–2 players · phones as controllers</div>
+    <div class="kicker">2 players · phones as controllers</div>
     <div class="big-title">Tank War</div>
     <div class="hero-tanks">
       <svg data-tank="A" viewBox="0 0 172 85"></svg>
       <svg data-tank="B" viewBox="0 0 172 85" class="flip"></svg>
     </div>
-    <div class="btn-row">
-      <button class="btn" id="btn-solo">1 player · vs bot</button>
-      <button class="btn" id="btn-create">2 players</button>
-    </div>
+    <button class="btn" id="btn-create">Create game</button>
   </div>
 
   <!-- LOBBY -->
@@ -183,12 +180,12 @@ canvas{display:block;position:absolute;top:0;left:0}
         <div class="qr-code" id="room-code"></div>
       </div>
       <div class="lobby-side">
-        <div class="kicker" id="lobby-kicker">Waiting for players</div>
+        <div class="kicker">Waiting for players</div>
         <div class="big-title">Tank War</div>
-        <div class="sub" style="text-align:left" id="lobby-sub">Scan the code with your phone camera, then press <b>Ready</b>. The battle starts when both players are ready.</div>
+        <div class="sub" style="text-align:left">Scan the code with your phone camera, then press <b>Ready</b>. The battle starts when both players are ready.</div>
         <div class="slots">
           <div class="slot" id="slot-A"><svg data-tank="A" viewBox="0 0 172 85"></svg><span class="slot-name">Player A</span><span class="slot-st" id="status-A">Waiting</span></div>
-          <div class="slot" id="slot-B"><svg data-tank="B" viewBox="0 0 172 85"></svg><span class="slot-name" id="slot-name-B">Player B</span><span class="slot-st" id="status-B">Waiting</span></div>
+          <div class="slot" id="slot-B"><svg data-tank="B" viewBox="0 0 172 85"></svg><span class="slot-name">Player B</span><span class="slot-st" id="status-B">Waiting</span></div>
         </div>
       </div>
     </div>
@@ -656,7 +653,6 @@ function shoot(p){
 function updateGame(dt){
   const sec=dt/1000;
   tick++;
-  if(gameMode==='solo') botUpdate(dt);
 
   for(const p of[p1,p2]){
     if(p.blink>0) p.blink=Math.max(0,p.blink-dt);
@@ -1059,14 +1055,13 @@ function spawnSafeMargin(){return hullHalfLen()+UNIT*.7;}
 function spawnPlayers(){
   const m=spawnSafeMargin();
   p1=makePlayer(m,m,'A','Player A',1,0);
-  p2=makePlayer(AW-m,AH-m,'B',gameMode==='solo'?'Bot':'Player B',2,Math.PI);
+  p2=makePlayer(AW-m,AH-m,'B','Player B',2,Math.PI);
 }
 function initRound(){
   resize();computeScale();
   bullets=[];particles=[];
   spawnPlayers();
-  genArena();buildNav();resetBot();
-  netInput.B={fwd:0,turn:0};
+  genArena();
   placePowerups();gameActive=true;updateHUD();
   document.getElementById('roundbadge').textContent='Round '+round+' · first to 3';
 }
@@ -1093,258 +1088,6 @@ function loop(ts){
   draw();
   drawReloadHUD();
   requestAnimationFrame(loop);
-}
-
-// ═══════════════════════════════════════════════════════
-//  BOT — 1-player mode. Drives tank B through the same netInput
-//  the phones use, so it obeys exactly the same physics/rules.
-// ═══════════════════════════════════════════════════════
-let gameMode='duo';                       // 'duo' | 'solo'
-const BOT={
-  reaction:[200,420],   // ms between "I have a shot" and pulling the trigger
-  scanEvery:200,        // ms between full firing-solution scans
-  angles:96,            // directions tested per scan
-  maxSimT:1.7,          // s of shell flight simulated
-  replanEvery:450,      // ms between path recomputes
-  dodgeLook:.75,        // s ahead to look for incoming shells
-  aimJitter:.07,        // rad of random aim error per shot (±2°)
-};
-const bot={};
-function resetBot(){
-  Object.assign(bot,{clock:0,anchor:null,scanAt:0,plan:null,path:[],pathAt:0,goal:null,goalAt:0,fireAt:0,
-    lastPos:null,stillSince:0,backUntil:0,backTurn:1,foeV:{x:0,y:0},foePrev:null,dodgeDir:0,dodgeUntil:0});
-}
-resetBot();
-const wrapA=a=>{while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a;};
-const rnd=(a,b)=>a+Math.random()*(b-a);
-
-// ── Shell flight simulation (mirrors the real bullet code) ──
-function inHullAt(tx,ty,ta,px,py,shrink){
-  const rx=px-tx,ry=py-ty,c=Math.cos(-ta),s=Math.sin(-ta);
-  return Math.abs(rx*c-ry*s)<(hullHalfLen()+BR)*shrink&&Math.abs(rx*s+ry*c)<(hullHalfW()+BR)*shrink;
-}
-function simShot(me,a,foe,foeV){
-  const save=me.angle;me.angle=a;const m=muzzlePoint(me,0);me.angle=save;
-  const pierce=me.pierceActive;
-  // barrel poking into a rock → shot is wasted
-  for(let i=1;i<=6;i++){const t=i/6;if(!pierce&&solidPoint(me.x+(m.x-me.x)*t,me.y+(m.y-me.y)*t)) return null;}
-  let x=m.x,y=m.y,dx=m.dx,dy=m.dy,b=0,t=0;
-  const step=6,dt=step/BULLET_SPEED;
-  while(t<BOT.maxSimT){
-    x+=dx*step;y+=dy*step;t+=dt;
-    const oobX=x<BR||x>AW-BR,oobY=y<BR||y>AH-BR;
-    const hit=pierce?null:rockContact(x,y,BR);
-    if(oobX||oobY||hit){
-      if(b>=MAX_BOUNCES) return null;
-      b++;
-      if(oobX){dx=-dx;x=Math.max(BR,Math.min(AW-BR,x));}
-      if(oobY){dy=-dy;y=Math.max(BR,Math.min(AH-BR,y));}
-      if(hit&&!oobX&&!oobY){
-        const d=dx*hit.nx+dy*hit.ny;if(d<0){dx-=2*d*hit.nx;dy-=2*d*hit.ny;}
-        const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;x+=hit.nx*(hit.depth+.5);y+=hit.ny*(hit.depth+.5);
-      }
-      continue;
-    }
-    // where will the target be when the shell gets there?
-    if(inHullAt(foe.x+foeV.x*t,foe.y+foeV.y*t,foe.angle,x,y,.85)) return{t,b};
-    // never pick a shot that comes back at us
-    if(b>0&&inHullAt(me.x,me.y,me.angle,x,y,1.25)) return null;
-  }
-  return null;
-}
-// Scan all directions; best = quick to turn to, short flight, few bounces
-function findShot(me,foe,foeV){
-  let best=null;
-  for(let i=0;i<BOT.angles;i++){
-    const a=i/BOT.angles*Math.PI*2;
-    const r=simShot(me,a,foe,foeV);if(!r) continue;
-    const turnT=Math.abs(wrapA(a-me.angle))/TANK_TURN;
-    const score=turnT+r.t+r.b*.35;
-    if(!best||score<best.score) best={a,score,...r};
-  }
-  return best;
-}
-
-// ── Navigation grid + A* around the rocks ──
-let nav=null;
-function buildNav(){
-  const cell=Math.max(12,hullHalfW()*1.1);
-  const cols=Math.ceil(AW/cell),rows=Math.ceil(AH/cell);
-  const free=new Uint8Array(cols*rows);
-  const clear=hullHalfW()*1.25,edge=hullHalfLen()*1.05;
-  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-    const x=(c+.5)*cell,y=(r+.5)*cell;
-    free[r*cols+c]=(x>edge&&x<AW-edge&&y>edge&&y<AH-edge&&!rockContact(x,y,clear))?1:0;
-  }
-  nav={cell,cols,rows,free};
-}
-function navCell(x,y){
-  const c=Math.max(0,Math.min(nav.cols-1,Math.floor(x/nav.cell))),r=Math.max(0,Math.min(nav.rows-1,Math.floor(y/nav.cell)));
-  return r*nav.cols+c;
-}
-function nearestFree(i){
-  if(nav.free[i]) return i;
-  const c0=i%nav.cols,r0=(i/nav.cols)|0;
-  for(let rad=1;rad<8;rad++)for(let dr=-rad;dr<=rad;dr++)for(let dc=-rad;dc<=rad;dc++){
-    const r=r0+dr,c=c0+dc;if(r<0||c<0||r>=nav.rows||c>=nav.cols)continue;
-    if(nav.free[r*nav.cols+c]) return r*nav.cols+c;
-  }
-  return -1;
-}
-function findPath(x0,y0,x1,y1){
-  if(!nav) buildNav();
-  const s=nearestFree(navCell(x0,y0)),g=nearestFree(navCell(x1,y1));
-  if(s<0||g<0) return null;
-  const N=nav.cols*nav.rows,gs=new Float32Array(N).fill(1e9),from=new Int32Array(N).fill(-1),closed=new Uint8Array(N);
-  const gc=g%nav.cols,gr=(g/nav.cols)|0;
-  const h=i=>{const dc=Math.abs(i%nav.cols-gc),dr=Math.abs(((i/nav.cols)|0)-gr);return Math.max(dc,dr)+.414*Math.min(dc,dr);};
-  const open=[s];gs[s]=0;
-  while(open.length){
-    let bi=0,bf=1e9;
-    for(let k=0;k<open.length;k++){const f=gs[open[k]]+h(open[k]);if(f<bf){bf=f;bi=k;}}
-    const cur=open.splice(bi,1)[0];
-    if(cur===g) break;
-    closed[cur]=1;
-    const cc=cur%nav.cols,cr=(cur/nav.cols)|0;
-    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
-      if(!dr&&!dc)continue;
-      const r=cr+dr,c=cc+dc;if(r<0||c<0||r>=nav.rows||c>=nav.cols)continue;
-      const n=r*nav.cols+c;if(!nav.free[n]||closed[n])continue;
-      if(dr&&dc&&(!nav.free[cr*nav.cols+c]||!nav.free[r*nav.cols+cc]))continue; // no corner cutting
-      const ng=gs[cur]+(dr&&dc?1.414:1);
-      if(ng<gs[n]){gs[n]=ng;from[n]=cur;if(!open.includes(n))open.push(n);}
-    }
-  }
-  if(from[g]<0&&g!==s) return null;
-  const pts=[];for(let i=g;i!==-1&&i!==s;i=from[i]) pts.push({x:(i%nav.cols+.5)*nav.cell,y:(((i/nav.cols)|0)+.5)*nav.cell});
-  pts.reverse();
-  // smooth: drop waypoints we can drive straight past
-  const out=[];let ax=x0,ay=y0;
-  for(let k=0;k<pts.length;k++){
-    const nxt=pts[k+1];
-    if(nxt&&clearLine(ax,ay,nxt.x,nxt.y)) continue;
-    out.push(pts[k]);ax=pts[k].x;ay=pts[k].y;
-  }
-  return out;
-}
-function clearLine(x0,y0,x1,y1){
-  const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/(nav.cell*.5));
-  for(let i=1;i<=n;i++){if(!nav.free[navCell(x0+(x1-x0)*i/n,y0+(y1-y0)*i/n)]) return false;}
-  return true;
-}
-
-// ── Incoming fire: is any shell about to hit me? ──
-function shellThreat(me,offX,offY){
-  for(const b of bullets){
-    if(b.owner===me&&b.bounces===0) continue;
-    let x=b.x,y=b.y;
-    for(let t=0;t<BOT.dodgeLook;t+=.02){
-      x+=b.dx*BULLET_SPEED*.02;y+=b.dy*BULLET_SPEED*.02;
-      if(!b.pierce&&solidPoint(x,y)) break;          // a rock will catch it (bounce ignored — good enough)
-      if(inHullAt(me.x+offX,me.y+offY,me.angle,x,y,1.15)) return true;
-    }
-  }
-  return false;
-}
-
-// ── Main brain: called every frame in solo mode ──
-function botUpdate(dt){
-  bot.clock+=dt;   // game time, not wall time
-  const me=p2,foe=p1,ctrl=netInput.B,now=bot.clock;
-  ctrl.fwd=0;ctrl.turn=0;
-  if(!me||!foe||me.dead||foe.dead) return;
-
-  // estimate player velocity (for leading shots)
-  if(bot.foePrev){const k=1000/Math.max(dt,1);bot.foeV.x=bot.foeV.x*.8+(foe.x-bot.foePrev.x)*k*.2;bot.foeV.y=bot.foeV.y*.8+(foe.y-bot.foePrev.y)*k*.2;}
-  bot.foePrev={x:foe.x,y:foe.y};
-
-  // TRIGGER — whenever the barrel as it points right now would connect, fire (after a human-ish delay)
-  if(me.reloadTimer<=0&&simShot(me,me.angle,foe,bot.foeV)){
-    if(!bot.fireAt) bot.fireAt=now+rnd(...BOT.reaction);
-    if(now>=bot.fireAt){
-      me.angle+=(Math.random()-.5)*BOT.aimJitter;   // human-ish wobble: long shots can miss
-      shoot(me);bot.fireAt=0;bot.plan=null;bot.scanAt=now+250;
-    }
-  }else bot.fireAt=0;
-
-  if(now<bot.backUntil){ctrl.fwd=-1;ctrl.turn=bot.backTurn;}   // un-sticking manoeuvre
-  else botSteer(dt,me,foe,ctrl,now);
-
-  // NO PROGRESS — wiggling in place for too long without shooting → back out and replan
-  if(!bot.anchor||Math.hypot(me.x-bot.anchor.x,me.y-bot.anchor.y)>TANK_R*.8||me.reloadTimer>0){bot.anchor={x:me.x,y:me.y,t:now};}
-  else if(now-bot.anchor.t>2500&&now>=bot.backUntil){
-    bot.backUntil=now+rnd(700,1000);bot.backTurn=Math.random()<.5?-1:1;
-    bot.anchor={x:me.x,y:me.y,t:now};bot.pathAt=0;bot.plan=null;bot.scanAt=now+1400;
-  }
-
-  // STUCK — wanted to move/turn but nothing changed for a while → reverse with a twist
-  const lp=bot.lastPos,wants=ctrl.fwd!==0||ctrl.turn!==0;
-  if(!lp||Math.hypot(me.x-lp.x,me.y-lp.y)>3||Math.abs(wrapA(me.angle-lp.a))>.03||!wants){bot.lastPos={x:me.x,y:me.y,a:me.angle};bot.stillSince=now;}
-  else if(now-bot.stillSince>600){
-    bot.backUntil=now+rnd(450,700);bot.backTurn=Math.random()<.5?-1:1;
-    bot.stillSince=now;bot.pathAt=0;bot.plan=null;bot.scanAt=now+700;
-  }
-}
-
-function botSteer(dt,me,foe,ctrl,now){
-  // 1) DODGE — shell incoming: back up or drive forward, whichever gets clear
-  if(now<bot.dodgeUntil){ctrl.fwd=bot.dodgeDir;}
-  else if(shellThreat(me,0,0)){
-    const L=TANK_SPEED*.35,fx=Math.cos(me.angle)*L,fy=Math.sin(me.angle)*L;
-    const fOk=!hullBlocked(me.x+fx,me.y+fy,me.angle)&&!shellThreat(me,fx,fy);
-    const bOk=!hullBlocked(me.x-fx,me.y-fy,me.angle)&&!shellThreat(me,-fx,-fy);
-    bot.dodgeDir=fOk&&bOk?(Math.random()<.5?1:-1):fOk?1:bOk?-1:(Math.random()<.5?1:-1);
-    bot.dodgeUntil=now+350;ctrl.fwd=bot.dodgeDir;
-  }
-
-  // 2) AIM — look for a firing solution once the reload is nearly done
-  if(now>bot.scanAt){
-    bot.scanAt=now+BOT.scanEvery;
-    bot.plan=me.reloadTimer<700?findShot(me,foe,bot.foeV):null;
-  }
-  if(bot.plan){
-    const diff=wrapA(bot.plan.a-me.angle);
-    if(Math.abs(diff)>.002){
-      // proportional on the last few degrees (never faster than a player can turn)
-      ctrl.turn=Math.max(-1,Math.min(1,diff/(TANK_TURN*Math.max(dt,1)/1000)));
-      // can't swing the hull here (rock in the way)? give up this shot and reposition
-      if(hullBlocked(me.x,me.y,me.angle+Math.sign(ctrl.turn)*.06)){bot.plan=null;ctrl.turn=0;bot.scanAt=now+600;}
-    }
-    if(bot.plan) return;          // stand still while aiming (dodging still moves us)
-  }
-  if(ctrl.fwd!==0) return;        // dodging overrides travel
-
-  // 3) MOVE — pick a goal (repair/shield/pierce crate if worth it, else hunt the player)
-  if(now>bot.goalAt){
-    bot.goalAt=now+600;
-    let goal={x:foe.x,y:foe.y,hunt:true};
-    let bestD=Infinity;
-    for(const pu of powerups){
-      if(pu.collected) continue;
-      const want=(pu.type==='REPAIR'&&me.hp<HP_MAX)||(pu.type==='ARMOR'&&!me.armorActive)||(pu.type==='PIERCE'&&!me.pierceActive);
-      if(!want) continue;
-      const dMe=Math.hypot(pu.x-me.x,pu.y-me.y),dFoe=Math.hypot(pu.x-foe.x,pu.y-foe.y);
-      const limit=(pu.type==='REPAIR'&&me.hp<=2)?Infinity:Math.min(AW,AH)*.45;
-      if(dMe<limit&&dMe<dFoe*1.15&&dMe<bestD){bestD=dMe;goal={x:pu.x,y:pu.y,hunt:false};}
-    }
-    bot.goal=goal;
-  }
-  const goal=bot.goal;
-  if(goal.hunt&&Math.hypot(goal.x-me.x,goal.y-me.y)<TANK_R*4.5&&clearLine(me.x,me.y,foe.x,foe.y)){
-    // close with a clear view: face the player and wait for the shot
-    const diff=wrapA(Math.atan2(foe.y-me.y,foe.x-me.x)-me.angle);
-    if(Math.abs(diff)>.05) ctrl.turn=Math.sign(diff);
-    return;
-  }
-  if(now>bot.pathAt||!bot.path.length){
-    bot.pathAt=now+BOT.replanEvery;
-    bot.path=findPath(me.x,me.y,goal.x,goal.y)||[{x:goal.x,y:goal.y}];
-  }
-  while(bot.path.length&&Math.hypot(bot.path[0].x-me.x,bot.path[0].y-me.y)<nav.cell*1.2) bot.path.shift();
-  const wp=bot.path[0]||goal;
-  const diff=wrapA(Math.atan2(wp.y-me.y,wp.x-me.x)-me.angle);
-  if(Math.abs(diff)>.06) ctrl.turn=Math.sign(diff);
-  if(Math.abs(diff)<.7) ctrl.fwd=1;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1385,7 +1128,6 @@ function setSlot(slot,state){
 }
 function applyLobbyUpdate(d){
   setSlot('A',d.readyA?'ready':d.A?'connected':'waiting');
-  if(gameMode==='solo'){setSlot('B','ready');document.getElementById('status-B').textContent='Bot';return;}
   setSlot('B',d.readyB?'ready':d.B?'connected':'waiting');
 }
 
@@ -1395,18 +1137,7 @@ function applyLobbyUpdate(d){
 const socket=io();
 let myCode=null;
 
-function setMode(m){
-  gameMode=m;
-  const solo=m==='solo';
-  document.getElementById('tb-name-B').textContent=solo?'Bot':'Player B';
-  document.getElementById('slot-name-B').textContent=solo?'Bot':'Player B';
-  document.getElementById('lobby-kicker').textContent=solo?'Waiting for player':'Waiting for players';
-  document.getElementById('lobby-sub').innerHTML=solo
-    ?'Scan the code with your phone camera, then press <b>Ready</b>. You play against a bot.'
-    :'Scan the code with your phone camera, then press <b>Ready</b>. The battle starts when both players are ready.';
-}
-document.getElementById('btn-create').addEventListener('click',()=>{setMode('duo');socket.emit('create_game',{mode:'duo'});});
-document.getElementById('btn-solo').addEventListener('click',()=>{setMode('solo');socket.emit('create_game',{mode:'solo'});});
+document.getElementById('btn-create').addEventListener('click',()=>socket.emit('create_game'));
 
 socket.on('game_created',({code,joinUrl,qrSvg})=>{
   myCode=code;
